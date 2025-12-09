@@ -281,13 +281,43 @@ html.presenter-notes {
 }
 
 /* For incremental builds (sequential display) */
-.incremental > ul > li,
-.incremental > ol > li {
+
+/* Default (recursive): hide all list items */
+
+.incremental li {
+
     opacity: 0.2;
+
     transition: opacity 0.4s ease-in-out;
+
 }
 
-.incremental > ul > li.visible,
-.incremental > ol > li.visible {
+.incremental li.visible {
+
     opacity: 1;
+
+}
+
+
+
+/* Flat mode: hide only top-level list items */
+
+.incremental-flat > ul > li,
+
+.incremental-flat > ol > li {
+
+    opacity: 0.2;
+
+    transition: opacity 0.4s ease-in-out;
+
+}
+
+
+
+.incremental-flat > ul > li.visible,
+
+.incremental-flat > ol > li.visible {
+
+    opacity: 1;
+
 }

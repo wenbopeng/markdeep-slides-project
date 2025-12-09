@@ -700,11 +700,24 @@ function showSlide(slideNum) {
     
     // Discover and reset build items for the new slide
     var currentSlideEl = document.getElementById("slide" + currentSlideNum);
+    buildItems = []; // Reset builds
+
     if (currentSlideEl) {
-        buildItems = Array.from(currentSlideEl.querySelectorAll(".incremental > ul > li, .incremental > ol > li"));
-        buildItems.forEach(function(item) { item.classList.remove('visible'); });
-    } else {
-        buildItems = [];
+        var incrementalBlock = currentSlideEl.querySelector(".incremental");
+        var incrementalFlatBlock = currentSlideEl.querySelector(".incremental-flat");
+
+        if (incrementalBlock) {
+            // New recursive behavior for "incremental": select all `li` descendants.
+            buildItems = Array.from(incrementalBlock.querySelectorAll("li"));
+
+        } else if (incrementalFlatBlock) {
+            // Old "flat" behavior for "incremental-flat": select only direct children `li`.
+            buildItems = Array.from(incrementalFlatBlock.querySelectorAll(":scope > ul > li, :scope > ol > li"));
+        }
+
+        if (buildItems.length > 0) {
+          buildItems.forEach(function(item) { item.classList.remove('visible'); });
+        }
     }
     currentBuildStep = 0;
 
