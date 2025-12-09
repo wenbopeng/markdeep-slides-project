@@ -249,6 +249,11 @@ html.presenter-notes {
     .incremental-flat > ol > li {
         opacity: 1 !important;
     }
+
+    /* Ensure appear items are visible when printing */
+    .appear {
+        opacity: 1 !important;
+    }
 }
 
 /* For slides with smaller text */
@@ -292,7 +297,7 @@ html.presenter-notes {
 .incremental-flat > ul > li,
 .incremental-flat > ol > li {
     /* Dim in draft view */
-    opacity: 0.2;
+    opacity: 1;
     transition: opacity 0.4s ease-in-out;
 }
 
@@ -306,6 +311,23 @@ html.presenter-notes {
 .incremental li.visible,
 .incremental-flat > ul > li.visible,
 .incremental-flat > ol > li.visible {
+    /* Make visible when class is added */
+    opacity: 1;
+}
+
+/* For 'appear' blocks (show element as a whole) */
+.appear {
+    /* Dim in draft view */
+    opacity: 1;
+    transition: opacity 1s ease-in-out;
+}
+
+.presentation .appear {
+    /* Fully hide in presentation view */
+    opacity: 0;
+}
+
+.appear.visible {
     /* Make visible when class is added */
     opacity: 1;
 }

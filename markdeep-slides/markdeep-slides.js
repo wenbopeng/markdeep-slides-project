@@ -712,20 +712,31 @@ function showSlide(slideNum) {
     buildItems = []; // Reset builds
 
     if (currentSlideEl) {
+        // 1. Gather items from incremental list blocks
         var incrementalBlock = currentSlideEl.querySelector(".incremental");
         var incrementalFlatBlock = currentSlideEl.querySelector(".incremental-flat");
 
+        // Helper function to filter out items inside an 'appear' block
+        var isNotInAppearBlock = function(element) { return !element.closest('.appear'); };
+
         if (incrementalBlock) {
-            // New recursive behavior for "incremental": select all `li` descendants.
-            buildItems = Array.from(incrementalBlock.querySelectorAll("li"));
+            var listItems = Array.from(incrementalBlock.querySelectorAll("li"));
+            buildItems = buildItems.concat(listItems.filter(isNotInAppearBlock));
 
         } else if (incrementalFlatBlock) {
-            // Old "flat" behavior for "incremental-flat": select only direct children `li`.
-            buildItems = Array.from(incrementalFlatBlock.querySelectorAll(":scope > ul > li, :scope > ol > li"));
+            var listItems = Array.from(incrementalFlatBlock.querySelectorAll(":scope > ul > li, :scope > ol > li"));
+            buildItems = buildItems.concat(listItems.filter(isNotInAppearBlock));
         }
 
+        // 2. Gather 'appear' blocks
+        var appearBlocks = Array.from(currentSlideEl.querySelectorAll(".appear"));
+        buildItems = buildItems.concat(appearBlocks);
+
+        // 3. Reset visibility on all collected build items
         if (buildItems.length > 0) {
-          buildItems.forEach(function(item) { item.classList.remove('visible'); });
+          buildItems.forEach(function(item) {
+              item.classList.remove('visible');
+          });
         }
     }
     currentBuildStep = 0;
