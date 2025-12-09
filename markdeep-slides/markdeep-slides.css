@@ -318,8 +318,8 @@ html.presenter-notes {
 /* For 'appear' blocks (show element as a whole) */
 .appear {
     /* Dim in draft view */
-    opacity: 1;
-    transition: opacity 1s ease-in-out;
+    opacity: 0.2;
+    transition: opacity 0.4s ease-in-out;
 }
 
 .presentation .appear {
@@ -330,4 +330,30 @@ html.presenter-notes {
 .appear.visible {
     /* Make visible when class is added */
     opacity: 1;
+}
+
+/* Highlight styles for list items based on leading symbol */
+li > span.highlight-red,
+li > span.highlight-orange,
+li > span.highlight-green,
+li > span.highlight-blue,
+li > span.highlight-purple {
+    padding: 0em 0.4em;
+    border-radius: 5px;
+}
+
+li > span.highlight-red {
+    background-color: #ff9794; /* Light red */
+}
+li > span.highlight-orange {
+    background-color: #ffc78f; /* Light orange */
+}
+li > span.highlight-green {
+    background-color: #a2f29a; /* Light green */
+}
+li > span.highlight-blue {
+    background-color: #a0c2ff; /* Light blue */
+}
+li > span.highlight-purple {
+    background-color: #c3acf4; /* Light purple */
 }
