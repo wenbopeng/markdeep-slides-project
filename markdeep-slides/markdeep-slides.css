@@ -242,6 +242,13 @@ html.presenter-notes {
     .markdeepFooter {
         display: none;  /* again, sorry morgan */
     }
+
+    /* Ensure all incremental items are visible when printing */
+    .incremental li,
+    .incremental-flat > ul > li,
+    .incremental-flat > ol > li {
+        opacity: 1 !important;
+    }
 }
 
 /* For slides with smaller text */
@@ -281,43 +288,24 @@ html.presenter-notes {
 }
 
 /* For incremental builds (sequential display) */
-
-/* Default (recursive): hide all list items */
-
-.incremental li {
-
-    opacity: 0.2;
-
-    transition: opacity 0.4s ease-in-out;
-
-}
-
-.incremental li.visible {
-
-    opacity: 1;
-
-}
-
-
-
-/* Flat mode: hide only top-level list items */
-
+.incremental li,
 .incremental-flat > ul > li,
-
 .incremental-flat > ol > li {
-
+    /* Dim in draft view */
     opacity: 0.2;
-
     transition: opacity 0.4s ease-in-out;
-
 }
 
+.presentation .incremental li,
+.presentation .incremental-flat > ul > li,
+.presentation .incremental-flat > ol > li {
+    /* Fully hide in presentation view */
+    opacity: 0;
+}
 
-
+.incremental li.visible,
 .incremental-flat > ul > li.visible,
-
 .incremental-flat > ol > li.visible {
-
+    /* Make visible when class is added */
     opacity: 1;
-
 }
