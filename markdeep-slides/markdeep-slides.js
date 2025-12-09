@@ -153,6 +153,15 @@ function initSlides() {
                             // Handle marker in its own paragraph or inline
                             sc.innerHTML = sc.innerHTML.replace(/<p>\s*\[small-text\]\s*<\/p>/g, '').replace(/\[small-text\]/g, '');
                         }
+
+            // Check for incremental markers
+            if (sc.innerHTML.includes('[incremental]')) {
+                sc.classList.add('incremental');
+                sc.innerHTML = sc.innerHTML.replace(/<p>\s*\[incremental\]\s*<\/p>/g, '').replace(/\[incremental\]/g, '');
+            } else if (sc.innerHTML.includes('[incremental-flat]')) {
+                sc.classList.add('incremental-flat');
+                sc.innerHTML = sc.innerHTML.replace(/<p>\s*\[incremental-flat\]\s*<\/p>/g, '').replace(/\[incremental-flat\]/g, '');
+            }
                 
                                                 // Check for two-column marker ;;;
                                                 if (sc.innerHTML.includes(';;;')) {
