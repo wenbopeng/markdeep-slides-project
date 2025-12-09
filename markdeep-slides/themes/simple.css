@@ -1,0 +1,536 @@
+@import url('../lib/webfonts/source-sans-pro/2.045R-ro-1.095R-it/webfont.css');
+@import url('../lib/webfonts/iosevka/2.3.1/webfont.css');
+
+:root {
+    --text-color: black;
+    --accent-color: #004295;
+    --accent-color2: #ddd;
+    --link-color: #38c;
+    --text-font: "Source Sans Pro";
+    --slide-number-color:var(--accent-color);
+    --code-font: "Iosevka";
+}
+
+body {
+    color: var(--text-color);
+}
+
+.slide-progress {
+    background-color: rgba(190,190,190,.5);
+    height: 0.2rem;
+}
+
+
+/* fonts */
+body, .md div.title, .md h1, .md h2, .md h3 {
+    font-family: var(--text-font);
+}
+.md a, .md a:link, .md a:visited, .md code, .md pre, .md svg.diagram, .md kbd {
+    font-family: var(--code-font);
+}
+
+
+/* basics */
+.md strong,
+.md b {
+    color: var(--accent-color);
+}
+.md a,
+.md a:link,
+.md a:visited {
+    color: var(--link-color);
+}
+.md kbd {
+    background-color: #ddd;
+    border: 0.05em solid #aaa;
+    padding: 0 0.2em 0.1em;
+    border-radius: 0.2em;
+    box-shadow: 0 0.05em 0.1em rgba(0, 0, 0, .2),
+                0 0.05em 0     rgba(255, 255, 255, .7) inset;
+}
+.md hr {
+    border: 0;
+    border-bottom: 0.1rem solid var(--accent-color2);
+}
+
+
+/* title */
+.md div.title {
+    font-weight: bold;
+    text-align: left;
+    text-transform: uppercase;
+    font-size: 2rem !important;
+    margin: calc(var(--slide-height) / 2 - 5rem) 0 0 0;  /* center vertically, assuming two lines of text */
+    padding: 0;
+    font-family: "华文中宋";
+    color: var(--accent-color);
+    border-bottom: solid var(--accent-color) 0.1rem;
+}
+.md div.subtitle {
+    text-align: left;
+    text-transform: uppercase;
+    font-size: 0.67rem;
+}
+
+
+/* headings */
+.md h1,
+.md h2 {
+    text-align: left;
+    border: none;
+    width: calc(var(--slide-width) + 2 * var(--side-margin));
+    padding-left: var(--side-margin);
+    margin: 0 0 0 calc(0rem - var(--side-margin));
+}
+.md h1 {
+    background: var(--accent-color);
+    /* border-bottom: solid var(--accent-color) 0.1rem; */
+    color:white;
+    font-weight: bolder;
+    font-family: "华文中宋";
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+    font-size: 1.5rem;
+    margin-top: calc(var(--slide-height) / 2 - 4.5rem / 2);  
+    padding-right: calc(var(--slide-width) / 2 - 8em); /* 解决章节标题右侧出界问题 */
+    line-height:150%; /* 章节标题的行距 */
+    /* text-align: center; */
+}
+
+
+
+
+
+.md h2 {
+    background: var(--accent-color);
+    color: white;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+.md h3 {
+    color: inherit;
+    font-size: 1rem;
+    margin: 1rem 0;
+    padding: 0;
+}
+
+
+/* quotes */
+.md blockquote {
+    background-color: #eee;
+    padding: 0.1rem 0.4rem;
+    margin: 10 0 1 0;
+    font-size: 0.8em;
+    border-left: solid 5px lightgray;
+    font-family: "宋体";
+    line-height: 1.5em;
+}
+
+
+
+
+.md blockquote.fancyquote {
+    background: transparent;
+}
+.md blockquote.fancyquote .author {
+    margin-top: 0.2rem;
+}
+
+
+/* code */
+.md a,
+.md a:link,
+.md a:visited,
+.md kbd,
+.md code {
+    font-size: 0.93em;  /* em! */
+}
+.md pre.listing {
+    font-size: 0.75em;
+    border-top: 0.1rem solid #ccc;
+    border-bottom: 0.1rem solid #ccc;
+    background-color: #eee;
+    padding: 0.25rem 0.5rem;
+    line-height: 1rem;
+}
+.md pre.listing .linenumbers {
+    padding-left: 0;
+}
+.md pre.listing .linenumbers span.line:before {
+    color: var(--accent-color);
+}
+
+
+/* captions */
+.md div.imagecaption,
+.md div.tablecaption,
+.md div.listingcaption {
+    text-align: center;
+}
+
+
+/* admonitions */
+.md .admonition {
+    border-radius: 0;
+    padding: .25rem 0.4rem;
+    border-left-width: 0.2rem !important;
+    border-left-color: rgba(68,138,255,.4) !important;
+    background-color: rgba(68,138,255,.2) !important;
+    font-size: 0.8em;
+}
+.md .admonition::before {
+    display: none !important;
+}
+.md .admonition.tip {
+    border-left-color: rgba(40,230,40,.4) !important;
+    background-color: rgba(40,230,40,.2) !important;
+}
+.md .admonition.warn,
+.md .admonition.warning {
+    border-left-color: rgba(255,145,0,.4) !important;
+    background-color: rgba(255,145,0,.2) !important;
+}
+.md .admonition.error {
+    border-left-color: rgba(255,40,40,.4) !important;
+    background-color: rgba(255,40,40,.2) !important;
+}
+.md .admonition-title {
+    margin: 0;
+    padding: 0;
+    margin-bottom: -1rem;
+    border-width: 0;
+    text-transform: uppercase;
+    font-size: 0.8em;
+    color: rgba(0,0,0,0.6);
+}
+
+
+/* endnotes and bibliography */
+.md .endnote,
+.md .bib {
+    font-size: 0.6rem;
+    line-height: 1rem;
+}
+.md .endnote {
+    padding-left: 0.38rem;
+    text-indent: -0.38rem;
+}
+.md .bib {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+    text-indent: -1.5rem;
+}
+.md .bib b {
+    color: var(--link-color);
+    font-family: var(--code-font);
+    font-weight: initial;
+}
+
+.md ul > li.minus:before{
+    content: "\2022";
+}
+
+
+
+/* 
+.md table {
+    font-size: 0.5em !important;
+} */
+
+/* 表格设置 */
+.md table {
+    font-size: 0.6em !important;
+    margin: 1em 0;               /* 可选：上下留点空 */
+    line-height: 1em;
+}
+
+/* 1. 去掉 <th> 底纹 */
+.md table th {
+    background: transparent !important;   /* 清底纹 */
+}
+
+
+/* 2. 三条横线 */
+.md table tr:first-child th {
+    border-top: 2px solid #000 !important;          /* 顶线 */
+    color: black !important;
+    border-bottom: 1px solid #000 !important; /* 栏目线 */
+}
+.md table tr th,
+.md table tr td {
+    border: none !important;                  /* 去掉所有竖线/横线 */
+    padding: 4px 8px;              /* 让文字不贴边 */
+}
+
+.md table tbody tr:last-child td {
+    border-bottom: 2px solid #000 !important; /* 底线 */
+}
+
+
+/* 3. 清掉 tbody 的斑马纹 / 任意底纹 */
+/* .md table tbody tr:nth-child(odd),
+.md table tbody tr:nth-child(even),
+.md table tr {
+    background: transparent !important;
+} */
+
+
+
+.md .admonition-title{
+    font-size: 1.2em;
+    color: black;
+    border-bottom: solid 1px black !important;
+    /* background-color: rgba(40,230,40,.4); */
+    margin-bottom: 0em;
+}
+
+
+
+/* 每张幻灯片成为定位上下文，并强制保持固定高宽比 */
+.slide {
+    position: relative;
+    width: var(--slide-width);
+    height: var(--slide-height);
+    /* box-sizing: border-box; */
+    /* margin: 0 auto 0 auto;  */
+    overflow: visible;
+}
+
+/* 左下角章节标签 */
+.chapter-label {
+    position: absolute;
+    bottom: 1%;   /* 相对幻灯片底部定位 */
+    left: 2%;
+    font-size: 0.6em;
+    color: var(--accent-color);
+    /* font-style: italic; */
+    pointer-events: none;
+    /* z-index: 10; */
+}
+
+
+.presentation .chapter-label {
+    position: absolute;
+    /* bottom: calc(0.03 * var(--slide-height));
+    left: calc(0.03 * var(--slide-width)); */
+    bottom: 1%;
+    left: 2%;
+    font-size: 0.6em;
+    color: var(--accent-color);
+    pointer-events: none;
+}
+
+.presentation.taller .chapter-label {
+    /* 播放状态下左下角的章节标题避免因纵向放而错位 */
+    top: calc(var(--slide-height) + var(--slide-letterbox-height) / 2 - 1.75rem);
+    
+}
+
+.presentation.wider .chapter-label {
+    /* 播放状态下左下角的章节标题避免因横向缩放而错位 */
+    left: calc(var(--slide-letterbox-width) / 2 + 1em);
+}
+
+.slide-number{
+    /* 底部页码位置防止出界闪烁 */
+    margin-left: 90%;
+}
+
+.md h2 {
+    /* background: transparent;
+    color: black;
+    padding-top: 0;
+    padding-bottom: 0.5rem; */
+    margin-top: 2.5%;
+}
+
+.slide-progress {
+    background-color: var(--accent-color2);
+    z-index: -1;
+    height: 4%;
+}
+
+
+.toc-title {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+    text-align: left;
+    position: relative;
+    top: 5em;
+    color: var(--accent-color);
+    left: -1em;
+}
+
+
+
+
+/* .presentation.taller .slide-progress {
+    margin-top: calc(var(--slide-height) - var(--slide-letterbox-height) / 2 - 38.75rem);
+} */
+
+div#slide1 .slide-number, div#slide1 .slide-progress {
+    /* 关闭目录页的进度条和页码，防止在播放时出现滚动页 */
+    /* margin-top: calc(var(--slide-height) - var(--slide-letterbox-height) / 2 - 28em); */
+    display: none;
+}
+
+
+
+
+.nav-section-item.active {
+    /* 顶部状态栏当前主题板块 */
+    background: var(--accent-color);
+    font-weight: bold;
+    color: white;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    border-radius: 5px 5px 0 0;
+    max-width: none;            /* 取消宽度限制 */
+    overflow: visible;          /* 激活后取消隐藏 */
+}
+
+.toc-list {
+    text-align: left;
+    margin: 0 auto;
+    overflow: hidden;
+    column-width: 13em;
+    column-gap: 3em;
+    border-left: 1px solid var(--accent-color);
+    left: 17%;
+    position: absolute;
+    column-fill: auto;
+    font-size: 0.8em;
+    column-rule: 1px solid var(--accent-color);
+}
+
+/* =================== */
+
+.toc-list {
+    position: absolute;
+    left: 17%;
+    width: 80%;
+    height: 68%;
+    padding-left: 1em !important;               /* 稍微放大一点，容纳 3 位数也没问题 */
+    counter-reset: toc-number;
+    line-height: 1.9;
+    column-width: 13.5em;
+    column-gap: 3em;
+    column-rule: 1px solid var(--accent-color);
+    column-fill: auto;
+    overflow: hidden;
+}
+
+.toc-list > *:not(h3) {
+    break-inside: avoid;
+    padding-left: 4em;               /* 关键：数字占用的宽度 */
+    text-indent: -4em;               /* 关键：负缩进，换行后文字才和第一行文字对齐 */
+    margin: 0.25em 0;                /* 条目间距更舒服一点 */
+    word-break: break-word;          /* 长单词/链接也能正常换行 */
+    hyphens: auto;                   /* 可选：英文长词自动加连字符换行，更美观 */
+}
+
+.toc-list > *:not(h3)::before {
+    counter-increment: toc-number;
+    content: counter(toc-number, decimal) ". ";
+    display: inline-block;
+    width: 4em;                      /* 必须和上面 padding-left / text-indent 完全一致！ */
+    text-align: right;
+    margin-right: -0.5em;
+    color: var(--accent-color);
+    font-variant-numeric: tabular-nums;   /* 1 和 10 和 100 完全等宽对齐 */
+    font-weight: 600;
+    top: 1em;
+    position: relative;
+}
+
+
+.toc-list li {
+    padding-left: 1.2em;
+    text-indent: -4.5em !important;
+}
+
+/* 可选：h3 大标题也用同样的悬挂缩进（章节标题） */
+
+
+/* ===================== */
+
+
+
+
+.md ul a {
+    font-size: 0.93em;
+    position: relative;
+    top: 1em;
+    left: 1em;
+    color: var(--accent-color) !important;
+}
+
+.md a{
+   color: var(--accent-color) !important;
+}
+
+.toc-button {
+    /* 顶部目录 */
+    /* margin-right: 35em; */
+    border-right: none;
+    padding-right: 1em;
+    left: 4%;
+    position: absolute !important; /*必须!important,避免闪烁*/
+}
+
+
+.top-nav-bar {
+    background: transparent;
+    text-align: center;
+    padding: 0px;
+    border-bottom: none;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1em;
+    font-size: 0.4em;
+    width: 100%;
+    padding-left: 8%;
+    padding-top: 0%;
+    position: absolute;
+    padding-right: 2%;
+    color: lightgray;
+    height: 4%;
+    border-bottom: 1px solid var(--accent-color);
+    line-height: 2;
+}
+
+.presentation.wider .top-nav-bar {
+    /* 播放状态下左下角的章节标题避免因横向缩放而错位 */
+    left: calc(var(--slide-letterbox-width) / 2);
+}
+
+
+.presentation .top-nav-bar {
+    top: calc(var(--slide-height) + var(--slide-letterbox-height) / 2 - 100%);
+}
+
+
+
+.top-nav-bar a,
+.top-nav-bar span {
+    white-space: nowrap;        /* 强制不换行 */
+    overflow: hidden;           /* 超出隐藏 */
+    text-overflow: ellipsis;    /* 超出显示省略号 */
+    max-width: 100%;           /* 你自己定一个合理最大宽度，或者用 vw */
+    display: inline-block;      /* ellipsis 必须是 block/inline-block */
+}
+
+/* hover 时完整显示 + 可选小 tooltip 背景 */
+.top-nav-bar a:hover,
+.top-nav-bar span:hover {
+    overflow: visible;          /* 关键：hover 后取消隐藏 */
+    max-width: none;            /* 取消宽度限制 */
+    background: var(--accent-color); /* 可选：悬浮时给个深色底，更像 tooltip */
+    padding: 0 1% 0 1%;
+    color: white;
+    border-radius: 4px;
+    /* position: relative; */
+}
+
