@@ -24,6 +24,58 @@ var currentBuildStep = 0;
 // make options available globally
 var options;
 
+function processFencedBlocks(nodes) {
+    var newNodes = [];
+    var capturing = false;
+    var capturedNodes = [];
+    var blockType = '';
+
+    var startRegex = /^:::(incremental|incremental-flat|appear)\s*$/;
+    var endRegex = /^:::\s*$/;
+
+    for (var i = 0; i < nodes.length; i++) {
+        var node = nodes[i];
+        // Ensure node has textContent property before trimming
+        var text = node.textContent ? node.textContent.trim() : '';
+        var match = text.match(startRegex);
+
+        if (match) {
+            capturing = true;
+            blockType = match[1];
+            capturedNodes = [];
+            continue;
+        }
+
+        if (endRegex.test(text)) {
+            if (capturing) {
+                var wrapper = document.createElement('div');
+                wrapper.className = blockType;
+                for(var j = 0; j < capturedNodes.length; j++) {
+                    wrapper.appendChild(capturedNodes[j]);
+                }
+                newNodes.push(wrapper);
+            }
+            capturing = false;
+            capturedNodes = [];
+            blockType = '';
+            continue;
+        }
+
+        if (capturing) {
+            capturedNodes.push(node);
+        } else {
+            newNodes.push(node);
+        }
+    }
+
+    // If a block was unclosed, append its nodes at the end to prevent content loss.
+    if (capturedNodes.length > 0) {
+        newNodes.push.apply(newNodes, capturedNodes);
+    }
+    
+    return newNodes;
+}
+
 // process options, break rendered markdeep into slides on <hr> tags (unless the
 // class "ignore" is set), kick off some other init tasks as well
 function initSlides() {
@@ -137,8 +189,10 @@ function initSlides() {
             // slide content
             var sc = document.createElement('div');
             sc.className = "slide-content";
-            for (var j = 0; j < currentSlide.length; j++) {
-                var se = currentSlide[j];
+
+            var processedNodes = processFencedBlocks(currentSlide);
+            for (var j = 0; j < processedNodes.length; j++) {
+                var se = processedNodes[j];
 
                 if (se.tagName == "P" && se.innerHTML.trim().length == 0) {
                     // skip empty paragraphs
