@@ -17,6 +17,10 @@ window.presenterNotesTimerStart = null;
 var slideChangeHook = (oldSlide, newSlide) => {};
 var modeChangeHook = (newMode) => {};
 
+// state for incremental builds
+var buildItems = [];
+var currentBuildStep = 0;
+
 // make options available globally
 var options;
 
@@ -693,6 +697,17 @@ function showSlide(slideNum) {
     history.replaceState({}, '', '#' + "slide" + slideNum);
     options.slideChangeHook(currentSlideNum, slideNum);
     currentSlideNum = slideNum;
+    
+    // Discover and reset build items for the new slide
+    var currentSlideEl = document.getElementById("slide" + currentSlideNum);
+    if (currentSlideEl) {
+        buildItems = Array.from(currentSlideEl.querySelectorAll(".incremental > ul > li, .incremental > ol > li"));
+        buildItems.forEach(function(item) { item.classList.remove('visible'); });
+    } else {
+        buildItems = [];
+    }
+    currentBuildStep = 0;
+
     updatePresenterNotes(slideNum);
 }
 
@@ -712,6 +727,14 @@ function updatePresenterNotes(slideNum) {
 
 // ->
 function nextSlide() {
+    // If there are build items and not all are visible yet
+    if (buildItems.length > 0 && currentBuildStep < buildItems.length) {
+        buildItems[currentBuildStep].classList.add('visible');
+        currentBuildStep++;
+        return;
+    }
+
+    // Otherwise, go to the next slide
     if (currentSlideNum < slideCount - 1) {
         showSlide(currentSlideNum + 1);
     }
@@ -719,6 +742,14 @@ function nextSlide() {
 
 // <-
 function prevSlide() {
+    // If there are build items and some are visible
+    if (buildItems.length > 0 && currentBuildStep > 0) {
+        currentBuildStep--;
+        buildItems[currentBuildStep].classList.remove('visible');
+        return;
+    }
+
+    // Otherwise, go to the previous slide
     if (currentSlideNum > 0) {
         showSlide(currentSlideNum - 1);
     }
