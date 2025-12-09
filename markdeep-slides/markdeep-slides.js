@@ -208,13 +208,23 @@ function initSlides() {
                             sc.innerHTML = sc.innerHTML.replace(/<p>\s*\[small-text\]\s*<\/p>/g, '').replace(/\[small-text\]/g, '');
                         }
 
-            // Check for incremental markers
-            if (sc.innerHTML.includes('[incremental]')) {
+            // Check for build/incremental markers and global options
+            if (sc.innerHTML.includes('[build]')) {
+                sc.classList.add('build');
+                sc.innerHTML = sc.innerHTML.replace(/<p>\s*\[build\]\s*<\/p>/g, '').replace(/\[build\]/g, '');
+            } else if (sc.innerHTML.includes('[incremental]')) {
                 sc.classList.add('incremental');
                 sc.innerHTML = sc.innerHTML.replace(/<p>\s*\[incremental\]\s*<\/p>/g, '').replace(/\[incremental\]/g, '');
             } else if (sc.innerHTML.includes('[incremental-flat]')) {
                 sc.classList.add('incremental-flat');
                 sc.innerHTML = sc.innerHTML.replace(/<p>\s*\[incremental-flat\]\s*<\/p>/g, '').replace(/\[incremental-flat\]/g, '');
+            } else {
+                // No slide-specific marker found, check for global options
+                if (options.incremental) {
+                    sc.classList.add('incremental');
+                } else if (options.incrementalFlat) {
+                    sc.classList.add('incremental-flat');
+                }
             }
                 
                                                 // Check for two-column marker ;;;
@@ -565,6 +575,8 @@ function processMarkdeepSlidesOptions() {
         totalSlideNumber: false,
         progressBar: true,
         breakOnHeadings: false,
+        incremental: false,
+        incrementalFlat: false, // Use camelCase for consistency
         slideChangeHook: (oldSlide, newSlide) => {},
         modeChangeHook: (newMode) => {}
     };
