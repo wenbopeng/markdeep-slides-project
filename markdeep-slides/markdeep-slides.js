@@ -30,7 +30,7 @@ function processFencedBlocks(nodes) {
     var capturedNodes = [];
     var blockType = '';
 
-    var startRegex = /^:::(incremental|incremental-flat|appear)\s*$/;
+    var startRegex = /^:::(incremental|incremental-flat|appear\d*)\s*$/;
     var endRegex = /^:::\s*$/;
 
     for (var i = 0; i < nodes.length; i++) {
@@ -824,27 +824,64 @@ function showSlide(slideNum) {
     buildItems = []; // Reset builds
 
     if (currentSlideEl) {
-        // 1. Gather items from incremental list blocks
-        var incrementalBlock = currentSlideEl.querySelector(".incremental");
-        var incrementalFlatBlock = currentSlideEl.querySelector(".incremental-flat");
+        var slideContent = currentSlideEl.querySelector('.slide-content');
+        if (slideContent && slideContent.classList.contains('build')) {
+            // New [build] mode logic
+            var topLevelElements = Array.from(slideContent.children);
+            topLevelElements.forEach(function(el) {
+                // Do not make the nav bar a build step
+                if (el.classList.contains('top-nav-bar')) return;
 
-        // Helper function to filter out items inside an 'appear' block
-        var isNotInAppearBlock = function(element) { return !element.closest('.appear'); };
+                if (el.tagName === 'UL' || el.tagName === 'OL') {
+                    // For lists, each list item is a step
+                    var listItems = Array.from(el.querySelectorAll('li'));
+                    buildItems = buildItems.concat(listItems);
+                } else {
+                    // For other elements, the element itself is a step
+                    buildItems.push(el);
+                }
+            });
 
-        if (incrementalBlock) {
-            var listItems = Array.from(incrementalBlock.querySelectorAll("li"));
-            buildItems = buildItems.concat(listItems.filter(isNotInAppearBlock));
-
-        } else if (incrementalFlatBlock) {
-            var listItems = Array.from(incrementalFlatBlock.querySelectorAll(":scope > ul > li, :scope > ol > li"));
-            buildItems = buildItems.concat(listItems.filter(isNotInAppearBlock));
+        } else {
+            // Logic for manual builds (:::appear, :::incremental), now with ordering
+            var defaultBuilds = [];
+            var numberedBuilds = []; // Array of { item: el, order: num }
+    
+            // 1. Gather incremental list items as default builds
+            var incrementalBlock = currentSlideEl.querySelector(".incremental");
+            var incrementalFlatBlock = currentSlideEl.querySelector(".incremental-flat");
+            var isNotInAppearBlock = function(element) { return !element.closest('[class^="appear"]'); };
+    
+            if (incrementalBlock) {
+                var listItems = Array.from(incrementalBlock.querySelectorAll("li"));
+                defaultBuilds = defaultBuilds.concat(listItems.filter(isNotInAppearBlock));
+            } else if (incrementalFlatBlock) {
+                var listItems = Array.from(incrementalFlatBlock.querySelectorAll(":scope > ul > li, :scope > ol > li"));
+                defaultBuilds = defaultBuilds.concat(listItems.filter(isNotInAppearBlock));
+            }
+            
+            // 2. Gather all 'appear' blocks and sort them into default or numbered
+            var appearBlocks = currentSlideEl.querySelectorAll('[class^="appear"]');
+            var orderRegex = /appear(\d+)/;
+    
+            appearBlocks.forEach(function(block) {
+                var match = block.className.match(orderRegex);
+                if (match) {
+                    var order = parseInt(match[1], 10);
+                    numberedBuilds.push({ item: block, order: order });
+                } else {
+                    defaultBuilds.push(block);
+                }
+            });
+    
+            // 3. Sort numbered builds
+            numberedBuilds.sort(function(a, b) { return a.order - b.order; });
+    
+            // 4. Concatenate everything: default builds first, then sorted numbered builds
+            buildItems = defaultBuilds.concat(numberedBuilds.map(function(b) { return b.item; }));
         }
 
-        // 2. Gather 'appear' blocks
-        var appearBlocks = Array.from(currentSlideEl.querySelectorAll(".appear"));
-        buildItems = buildItems.concat(appearBlocks);
-
-        // 3. Reset visibility on all collected build items
+        // Reset visibility on all collected build items
         if (buildItems.length > 0) {
           buildItems.forEach(function(item) {
               item.classList.remove('visible');
