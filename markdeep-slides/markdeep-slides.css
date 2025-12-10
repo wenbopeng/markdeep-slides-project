@@ -338,24 +338,24 @@ li > span.highlight-orange,
 li > span.highlight-green,
 li > span.highlight-blue,
 li > span.highlight-purple {
-    padding: 0.2em 0.4em;
+    padding: 0em 0.4em;
     border-radius: 5px;
 }
 
 li > span.highlight-red {
-    background-color: #ffe0e0; /* Light red */
+    background-color: #ff9794; /* Light red */
 }
 li > span.highlight-orange {
-    background-color: #fff0e0; /* Light orange */
+    background-color: #ffc78f; /* Light orange */
 }
 li > span.highlight-green {
-    background-color: #e0ffe0; /* Light green */
+    background-color: #a2f29a; /* Light green */
 }
 li > span.highlight-blue {
-    background-color: #e0e0ff; /* Light blue */
+    background-color: #a6c6ff; /* Light blue */
 }
 li > span.highlight-purple {
-    background-color: #f0e0ff; /* Light purple */
+    background-color: #9f78ec; /* Light purple */
 }
 
 /* Admonition Title Styling */

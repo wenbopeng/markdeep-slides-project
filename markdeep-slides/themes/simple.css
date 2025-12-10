@@ -175,8 +175,8 @@ body, .md div.title, .md h1, .md h2, .md h3 {
     border-radius: 0;
     padding: .25rem 0.4rem;
     border-left-width: 0.2rem !important;
-    border-left-color: rgba(68,138,255,.4) !important;
-    background-color: rgba(68,138,255,.2) !important;
+    /* border-left-color: rgba(68,138,255,.4) !important;
+    background-color: rgba(68,138,255,.2) !important; */
     font-size: 0.8em;
 }
 .md .admonition::before {
