@@ -201,6 +201,51 @@ function initSlides() {
                 }
             }
 
+            // Highlight list items based on leading symbol
+            var highlightMap = {
+                '!': 'red',
+                '?': 'orange',
+                '&': 'blue',
+                '%': 'green',
+                '@': 'purple'
+            };
+            sc.querySelectorAll('li').forEach(function(li) {
+                // Find the first child node that is a text node and not just whitespace
+                var firstTextNode = null;
+                for (var k = 0; k < li.childNodes.length; k++) {
+                    var node = li.childNodes[k];
+                    if (node.nodeType === 3 && node.textContent.trim().length > 0) { // Node.TEXT_NODE === 3
+                        firstTextNode = node;
+                        break;
+                    }
+                }
+
+                if (firstTextNode) {
+                    var text = firstTextNode.textContent.trim();
+                    var matchedSymbol = null;
+
+                    for (var symbol in highlightMap) {
+                        if (text.startsWith(symbol)) {
+                            matchedSymbol = symbol;
+                            break;
+                        }
+                    }
+
+                    if (matchedSymbol) {
+                        var span = document.createElement('span');
+                        span.className = 'highlight-' + highlightMap[matchedSymbol];
+                        
+                        // Escape symbol for regex, then remove it and surrounding space from the original text
+                        var escapedSymbol = matchedSymbol.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                        var newText = text.replace(new RegExp('^' + escapedSymbol + '\\s*'), '');
+                        span.textContent = newText;
+                        
+                        // Replace the original text node with the new span
+                        firstTextNode.parentNode.replaceChild(span, firstTextNode);
+                    }
+                }
+            });
+
             // Check for small-text marker
             if (sc.innerHTML.includes('[small-text]')) {
                 slide.classList.add('small-text');
@@ -428,52 +473,6 @@ function initSlides() {
     addLetterboxing();
     relativizeDiagrams(options.diagramZoom);
     pauseVideos();
-
-    // Highlight list items based on leading symbol
-    var highlightMap = {
-        '!': 'red',
-        '?': 'orange',
-        '&': 'blue',
-        '$': 'green',
-        '@': 'purple'
-    };
-
-    document.querySelectorAll('.slide-content li').forEach(function(li) {
-        // Find the first child node that is a text node and not just whitespace
-        var firstTextNode = null;
-        for (var i = 0; i < li.childNodes.length; i++) {
-            var node = li.childNodes[i];
-            if (node.nodeType === 3 && node.textContent.trim().length > 0) { // Node.TEXT_NODE === 3
-                firstTextNode = node;
-                break;
-            }
-        }
-
-        if (firstTextNode) {
-            var text = firstTextNode.textContent.trim();
-            var matchedSymbol = null;
-
-            for (var symbol in highlightMap) {
-                if (text.startsWith(symbol)) {
-                    matchedSymbol = symbol;
-                    break;
-                }
-            }
-
-            if (matchedSymbol) {
-                var span = document.createElement('span');
-                span.className = 'highlight-' + highlightMap[matchedSymbol];
-                
-                // Escape symbol for regex, then remove it and surrounding space from the original text
-                var escapedSymbol = matchedSymbol.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-                var newText = text.replace(new RegExp('^' + escapedSymbol + '\\s*'), '');
-                span.textContent = newText;
-                
-                // Replace the original text node with the new span
-                firstTextNode.parentNode.replaceChild(span, firstTextNode);
-            }
-        }
-    });
 
     // Convert blockquotes with [!type] syntax into admonitions
     function processAdmonitionBlockquotes() {
