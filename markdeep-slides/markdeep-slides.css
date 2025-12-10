@@ -360,9 +360,15 @@ li > span.highlight-purple {
 
 /* Admonition Title Styling */
 .admonitionTitle {
-    font-size: 1.2em; /* Slightly larger than normal text */
+    font-size: 1.1em; /* Slightly larger than normal text */
     font-weight: bold; /* Bold text */
-    border-bottom: 1px solid black; /* Add a subtle solid bottom border */
+    border-bottom: 1px solid #ccc; /* Add a subtle solid bottom border */
     padding-bottom: 0.2em; /* Space between title text and border */
     margin-bottom: 0.5em; /* Space between title (with border) and content */
+}
+
+/* Custom Admonition Type: Question */
+.admonition.question {
+    border-left-color: #9b59b6 ; /* A nice purple color */
+    background-color: #f5eef8 ; /* A very light purple */
 }
