@@ -477,31 +477,31 @@ function initSlides() {
 
     // Convert blockquotes with [!type] syntax into admonitions
     function processAdmonitionBlockquotes() {
-        var admonitionRegex = /^\s*\[!(\w+)\]\s*(.*)?\s*$/; // NEW REGEX: Captures type and title after brackets
+        // This regex is designed to match only the first line if it's an admonition marker line.
+        var admonitionLineRegex = /(^\s*\[!(\w+)\]\s*(.*)?)(\r\n|\r|\n|$)/;
 
         document.querySelectorAll('.slide-content blockquote').forEach(function(bq) {
             var markerNode = null;
             
-            // Find the first child NODE (element or text) that contains the marker
+            // Find the first child NODE that looks like it contains the marker at the start.
             for (var i = 0; i < bq.childNodes.length; i++) {
                 var node = bq.childNodes[i];
-                var text = node.textContent ? node.textContent.trim() : ''; // Ensure textContent exists
-                
-                if (text.match(/^\s*\[!(\w+)\]/)) { // Pre-check for the marker
+                if (node.textContent && node.textContent.trim().startsWith('[!')) {
                     markerNode = node;
                     break;
                 }
             }
 
-            if (!markerNode) return; // No suitable node found
+            if (!markerNode) return;
 
-            var match = markerNode.textContent.trim().match(admonitionRegex);
-            if (!match) return; // Should not happen if pre-check was correct, but safe.
-            
+            var match = markerNode.textContent.match(admonitionLineRegex);
+            if (!match) return; // The node didn't start with the marker line as expected.
+
             // --- Transformation logic ---
-            var type = match[1] ? match[1].toLowerCase() : 'note';
-            var title = match[2] ? match[2].trim() : null; // NEW TITLE CAPTURE: match[2] is the part after the brackets
-            
+            var fullMatchedLine = match[0]; // The full string that was matched, e.g., "[!warning] title\n"
+            var type = match[2] ? match[2].toLowerCase() : 'note';
+            var title = match[3] ? match[3].trim() : null;
+
             var admonitionDiv = document.createElement('div');
             admonitionDiv.className = 'admonition ' + type;
 
@@ -512,12 +512,20 @@ function initSlides() {
                 admonitionDiv.appendChild(titleDiv);
             }
 
-            markerNode.remove(); // Remove the node that contained the marker
+            // Remove only the matched line from the beginning of the text node's content
+            markerNode.textContent = markerNode.textContent.substring(fullMatchedLine.length);
+            
+            // If the markerNode is now empty (e.g., it only contained the marker), remove it completely.
+            if (markerNode.textContent.trim() === '') {
+                markerNode.remove();
+            }
 
+            // Move remaining content from the blockquote to the new div
             while (bq.firstChild) {
                 admonitionDiv.appendChild(bq.firstChild);
             }
 
+            // Replace the blockquote with the new admonition div
             bq.parentNode.replaceChild(admonitionDiv, bq);
         });
     }
