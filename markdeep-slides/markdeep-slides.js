@@ -475,6 +475,54 @@ function initSlides() {
         }
     });
 
+    // Convert blockquotes with [!type] syntax into admonitions
+    function processAdmonitionBlockquotes() {
+        var admonitionRegex = /^\s*\[!(\w+)\]\s*(.*)?\s*$/; // NEW REGEX: Captures type and title after brackets
+
+        document.querySelectorAll('.slide-content blockquote').forEach(function(bq) {
+            var markerNode = null;
+            
+            // Find the first child NODE (element or text) that contains the marker
+            for (var i = 0; i < bq.childNodes.length; i++) {
+                var node = bq.childNodes[i];
+                var text = node.textContent ? node.textContent.trim() : ''; // Ensure textContent exists
+                
+                if (text.match(/^\s*\[!(\w+)\]/)) { // Pre-check for the marker
+                    markerNode = node;
+                    break;
+                }
+            }
+
+            if (!markerNode) return; // No suitable node found
+
+            var match = markerNode.textContent.trim().match(admonitionRegex);
+            if (!match) return; // Should not happen if pre-check was correct, but safe.
+            
+            // --- Transformation logic ---
+            var type = match[1] ? match[1].toLowerCase() : 'note';
+            var title = match[2] ? match[2].trim() : null; // NEW TITLE CAPTURE: match[2] is the part after the brackets
+            
+            var admonitionDiv = document.createElement('div');
+            admonitionDiv.className = 'admonition ' + type;
+
+            if (title) {
+                var titleDiv = document.createElement('div');
+                titleDiv.className = 'admonitionTitle';
+                titleDiv.textContent = title;
+                admonitionDiv.appendChild(titleDiv);
+            }
+
+            markerNode.remove(); // Remove the node that contained the marker
+
+            while (bq.firstChild) {
+                admonitionDiv.appendChild(bq.firstChild);
+            }
+
+            bq.parentNode.replaceChild(admonitionDiv, bq);
+        });
+    }
+    processAdmonitionBlockquotes();
+
     fullscreenActions();
 };
 
