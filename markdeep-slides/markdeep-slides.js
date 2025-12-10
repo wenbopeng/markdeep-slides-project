@@ -82,6 +82,17 @@ function initSlides() {
     // override default options with any differing user-specified options
     processMarkdeepSlidesOptions();
 
+    // Inject styles to fix MathJax background issue inside highlights
+    var style = document.createElement('style');
+    style.type = 'text/css';
+    style.innerHTML = `
+        [class*="highlight-"] .MathJax_SVG,
+        [class*="highlight-"] .MathJax_SVG * {
+            background: transparent !important;
+        }
+    `;
+    document.head.appendChild(style);
+
     // handle aspect ratio
     document.documentElement.style.setProperty('--aspect-ratio', options.aspectRatio);
     var sheet = document.createElement('style');
@@ -232,16 +243,33 @@ function initSlides() {
                     }
 
                     if (matchedSymbol) {
+                        var li = firstTextNode.parentNode;
+
+                        // 1. Remove symbol from the first text node.
+                        var escapedSymbol = matchedSymbol.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                        firstTextNode.textContent = text.replace(new RegExp('^' + escapedSymbol + '\\s*'), '');
+
+                        // 2. Create the wrapper span and insert it.
                         var span = document.createElement('span');
                         span.className = 'highlight-' + highlightMap[matchedSymbol];
-                        
-                        // Escape symbol for regex, then remove it and surrounding space from the original text
-                        var escapedSymbol = matchedSymbol.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-                        var newText = text.replace(new RegExp('^' + escapedSymbol + '\\s*'), '');
-                        span.textContent = newText;
-                        
-                        // Replace the original text node with the new span
-                        firstTextNode.parentNode.replaceChild(span, firstTextNode);
+                        li.insertBefore(span, firstTextNode);
+
+                        // 3. Move all subsequent inline nodes into the new span.
+                        var currentNode = firstTextNode;
+                        while (currentNode) {
+                            var nextNode = currentNode.nextSibling;
+                            // Stop at block-level elements like nested lists.
+                            var isBlock = currentNode.nodeType === 1 && ['UL', 'OL', 'P', 'DIV', 'BLOCKQUOTE'].indexOf(currentNode.tagName) !== -1;
+
+                            if (isBlock) {
+                                break;
+                            }
+                            
+                            // Move the inline node into the span.
+                            span.appendChild(currentNode);
+                            
+                            currentNode = nextNode;
+                        }
                     }
                 }
             });
