@@ -15,10 +15,6 @@ body {
     color: var(--text-color);
 }
 
-.slide-progress {
-    background-color: rgba(190,190,190,.5);
-    height: 0.2rem;
-}
 
 
 /* fonts */
@@ -346,9 +342,10 @@ body, .md div.title, .md h1, .md h2, .md h3 {
 }
 
 .slide-progress {
-    background-color: var(--accent-color2);
-    z-index: -1;
-    height: 1rem;
+    background-color: var(--accent-color);
+    z-index: 1;
+    height: 0.3rem;
+    top: calc(var(--slide-height) - 0.3em);
 }
 
 
@@ -377,6 +374,18 @@ div#slide1 .slide-number, div#slide1 .slide-progress {
 }
 
 
+.nav-section-item {
+    /* 顶部状态栏当前主题板块 */
+    background: lightblue;
+    color: black;
+    border: none;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    border-radius: 5px 5px 0 0;
+    max-width: none;            /* 取消宽度限制 */
+    overflow: visible;          /* 激活后取消隐藏 */
+}
+
 
 
 .nav-section-item.active {
@@ -384,8 +393,10 @@ div#slide1 .slide-number, div#slide1 .slide-progress {
     background: var(--accent-color);
     font-weight: bold;
     color: white;
-    padding-left: 0.5em;
+    padding-left: 0.2em;
     padding-right: 0.5em;
+    border: solid 1px var(--accent-color);
+    border-bottom: none;
     border-radius: 5px 5px 0 0;
     max-width: none;            /* 取消宽度限制 */
     overflow: visible;          /* 激活后取消隐藏 */
@@ -478,9 +489,10 @@ div#slide1 .slide-number, div#slide1 .slide-progress {
 .toc-button {
     /* 顶部目录 */
     /* margin-right: 35em; */
-    border-right: none;
+    border: none;
+    background-color: transparent;
     padding-right: 1em;
-    left: 4%;
+    left: 2%;
     position: absolute !important; /*必须!important,避免闪烁*/
 }
 
@@ -489,11 +501,10 @@ div#slide1 .slide-number, div#slide1 .slide-progress {
     background: transparent;
     text-align: center;
     padding: 0px;
-    border-bottom: none;
     display: flex;
     justify-content: flex-end;
-    gap: 1em;
-    font-size: 0.4em;
+    gap: 0.2em;
+    font-size: 0.5em;
     width: 100%;
     padding-left: 8%;
     padding-top: 0%;
