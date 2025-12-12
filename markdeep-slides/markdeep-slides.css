@@ -305,7 +305,7 @@ html.presenter-notes {
 .presentation .incremental-flat > ul > li,
 .presentation .incremental-flat > ol > li {
     /* Fully hide in presentation view */
-    opacity: 0;
+    opacity: 0.1;
 }
 
 .incremental li.visible,
