@@ -441,7 +441,7 @@ div#slide1 .slide-number, div#slide1 .slide-progress {
     color: var(--accent-color);
     font-variant-numeric: tabular-nums;   /* 1 和 10 和 100 完全等宽对齐 */
     font-weight: 600;
-    top: 1em;
+    /* top: 1em; */
     position: relative;
 }
 
@@ -462,7 +462,7 @@ div#slide1 .slide-number, div#slide1 .slide-progress {
 .md ul a {
     font-size: 0.93em;
     position: relative;
-    top: 1em;
+    /* top: 1em; */
     left: 1em;
     color: var(--accent-color) !important;
 }
