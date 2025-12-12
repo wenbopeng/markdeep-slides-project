@@ -342,13 +342,13 @@ body, .md div.title, .md h1, .md h2, .md h3 {
     color: black;
     padding-top: 0;
     padding-bottom: 0.5rem; */
-    margin-top: 2.5%;
+    margin-top: 1rem;
 }
 
 .slide-progress {
     background-color: var(--accent-color2);
     z-index: -1;
-    height: 4%;
+    height: 1rem;
 }
 
 
@@ -391,7 +391,7 @@ div#slide1 .slide-number, div#slide1 .slide-progress {
     overflow: visible;          /* 激活后取消隐藏 */
 }
 
-.toc-list {
+/* .toc-list {
     text-align: left;
     margin: 0 auto;
     overflow: hidden;
@@ -403,12 +403,16 @@ div#slide1 .slide-number, div#slide1 .slide-progress {
     column-fill: auto;
     font-size: 0.8em;
     column-rule: 1px solid var(--accent-color);
-}
+} */
 
 /* =================== */
 
 .toc-list {
-    position: absolute;
+    text-align: left;
+    margin: 0 auto;
+    border-left: 1px solid var(--accent-color);
+    font-size: 0.8em;
+    position: static;
     left: 17%;
     width: 80%;
     height: 68%;
@@ -496,7 +500,7 @@ div#slide1 .slide-number, div#slide1 .slide-progress {
     position: absolute;
     padding-right: 2%;
     color: lightgray;
-    height: 4%;
+    height: 1rem;
     border-bottom: 1px solid var(--accent-color);
     line-height: 2;
 }
