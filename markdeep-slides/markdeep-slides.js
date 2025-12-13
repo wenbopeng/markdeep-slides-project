@@ -384,6 +384,26 @@ function initSlides() {
         }
     }
 
+    // Add a class to slides that start with an H1 tag for special styling
+    for (const slide of slides) {
+        const slideContent = slide.querySelector('.slide-content');
+        if (!slideContent) continue;
+
+        // Find the first meaningful element, skipping empty paragraphs or text nodes
+        let firstMeaningfulElement = null;
+        for (const child of slideContent.childNodes) {
+            // Check for element nodes that aren't just empty paragraphs from Markdeep
+            if (child.nodeType === 1 && (child.tagName !== 'P' || child.textContent.trim() !== '')) {
+                firstMeaningfulElement = child;
+                break;
+            }
+        }
+        
+        if (firstMeaningfulElement && firstMeaningfulElement.tagName === 'H1') {
+            slide.classList.add('h1-title-slide');
+        }
+    }
+
     // Handle a section marker at the very end of the file
     if (nextSectionName) {
         sections.push({ name: nextSectionName, startSlide: slideCount });
