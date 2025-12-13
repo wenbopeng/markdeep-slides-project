@@ -558,10 +558,10 @@ div#slide1 .slide-number, div#slide1 .slide-progress {
 }
 
 /* On H1 slides, make the active nav tab taller to merge with the H1 block */
-.h1-title-slide .nav-section-item.active {
+/* .h1-title-slide .nav-section-item.active {
     padding-bottom: 4.6rem;
-    margin-bottom: -4.6rem; 
+    margin-bottom: -7.6rem; 
     position: relative; 
     z-index: 1; 
-}
+} */
 
