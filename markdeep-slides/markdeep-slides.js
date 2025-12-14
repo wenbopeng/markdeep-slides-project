@@ -872,24 +872,30 @@ function updateOnScroll() {
     }
 
     var slides = document.getElementsByClassName("slide");
-    var minSlideNum = 0;  // number of slide completely visible and closest to the top of the viewport
-    var minTop = -1;      // that slide's offset relative to the viewport
+    var bestSlideNum = 0;
+    var maxVisibility = 0;
+    var viewportHeight = window.innerHeight;
+
     for (var i = 0; i < slides.length; i++) {
         var slide = slides[i];
         var bcr = slide.getBoundingClientRect();
+        
+        var visibleTop = Math.max(0, bcr.top);
+        var visibleBottom = Math.min(viewportHeight, bcr.bottom);
+        var visibleHeight = Math.max(0, visibleBottom - visibleTop);
 
-        if (bcr.top >= 0 && (bcr.top < minTop || minTop == -1)) {
-            minSlideNum = parseInt(slide.id.substring(5), 10);
-            minTop = bcr.top;
+        if (visibleHeight > maxVisibility) {
+            maxVisibility = visibleHeight;
+            bestSlideNum = parseInt(slide.id.substring(5), 10);
         }
     }
 
     // update things only when the slide changes to improve performance
-    if (minSlideNum != currentSlideNum) {
-        history.replaceState({}, '', '#' + "slide" + minSlideNum);
-        options.slideChangeHook(currentSlideNum, minSlideNum);
-        currentSlideNum = minSlideNum;
-        updatePresenterNotes(minSlideNum);
+    if (bestSlideNum != currentSlideNum) {
+        history.replaceState({}, '', '#' + "slide" + bestSlideNum);
+        options.slideChangeHook(currentSlideNum, bestSlideNum);
+        currentSlideNum = bestSlideNum;
+        updatePresenterNotes(bestSlideNum);
     }
 }
 window.addEventListener('scroll', updateOnScroll);
