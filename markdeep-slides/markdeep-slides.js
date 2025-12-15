@@ -30,7 +30,7 @@ function processFencedBlocks(nodes) {
     var capturedNodes = [];
     var blockType = '';
 
-    var startRegex = /^:::(incremental|incremental-flat|appear\d*)\s*$/;
+    var startRegex = /^:::(incremental|incremental-flat|appear\d*|big|small|tiny)\s*$/;
     var endRegex = /^:::\s*$/;
 
     for (var i = 0; i < nodes.length; i++) {
@@ -280,6 +280,13 @@ function initSlides() {
                             // Handle marker in its own paragraph or inline
                             sc.innerHTML = sc.innerHTML.replace(/<p>\s*\[small-text\]\s*<\/p>/g, '').replace(/\[small-text\]/g, '');
                         }
+
+            // Check for tiny-text marker
+            if (sc.innerHTML.includes('[tiny-text]')) {
+                slide.classList.add('tiny-text');
+                // Handle marker in its own paragraph or inline
+                sc.innerHTML = sc.innerHTML.replace(/<p>\s*\[tiny-text\]\s*<\/p>/g, '').replace(/\[tiny-text\]/g, '');
+            }
 
             // Check for build/incremental markers and global options
             if (sc.innerHTML.includes('[build]')) {

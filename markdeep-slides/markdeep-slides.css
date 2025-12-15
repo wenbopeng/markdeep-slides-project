@@ -261,6 +261,26 @@ html.presenter-notes {
     font-size: 0.8em;
     line-height: 1.5em;
 }
+
+/* For slides with even smaller text */
+.slide.tiny-text .slide-content {
+    font-size: 0.6em;
+    line-height: 1.5em;
+}
+
+/* For fenced text blocks */
+.big {
+    font-size: 1.5em;
+}
+
+.small {
+    font-size: 0.8em;
+}
+
+.tiny {
+    font-size: 0.6em;
+}
+
 /* 分栏样式Two-column layout styles */
 .slide.two-column .columns-container {
     display: flex;
