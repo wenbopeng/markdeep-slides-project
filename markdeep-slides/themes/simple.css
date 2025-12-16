@@ -453,7 +453,7 @@ div#slide1 .slide-number, div#slide1 .slide-progress {
     display: inline-block;
     width: 4em;                      /* 必须和上面 padding-left / text-indent 完全一致！ */
     text-align: right;
-    margin-right: -0.5em;
+    margin-right: 0.5em;
     color: var(--accent-color);
     font-variant-numeric: tabular-nums;   /* 1 和 10 和 100 完全等宽对齐 */
     font-weight: 600;
@@ -479,7 +479,7 @@ div#slide1 .slide-number, div#slide1 .slide-progress {
     font-size: 0.93em;
     position: relative;
     /* top: 1em; */
-    left: 1em;
+    /* left: 1em; */
     color: var(--accent-color) !important;
 }
 
