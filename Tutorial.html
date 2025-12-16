@@ -1,0 +1,372 @@
+<meta charset="utf-8" lang="en">
+
+**基于MarkDeep-Slides的幻灯片制作工具**
+    新增自定义比例双栏、大纲逐条播放、自定义逐步播放、小号字体、自动导航栏、自动目录等功能
+
+<small><em><span class="current-date"></span></em></small><br>
+彭文波
+
+%%基础功能%%
+
+## 带有超链接的列表项
+
+
+:::big
+
+文字变大
+
+:::
+
+
+文字正常
+
+:::small
+
+文字变小
+
+:::
+
+
+:::tiny
+
+文字更小
+
+:::
+
+
+## 带有超链接的列表项
+
+- [禁止向公众提<big>供中超</big>联赛摄影作品案](https://www.chinacourt.cn/article/detail/2018/12/id/3608040.shtml)
+- [杨季康申请责令停止拍卖钱钟书书信手稿案-中国法院网](https://www.chinacourt.cn/article/detail/2018/12/id/3608044.shtml )
+- [美国礼来公司等与黄某某侵害商业秘密纠纷诉中行为保全案-中国法院网](https://www.chinacourt.cn/article/detail/2018/12/id/3608045.shtml)
+- [网易云音乐侵害传播权诉前保全案](https://www.chinacourt.cn/article/detail/2018/12/id/3608047.shtml)
+- [许赞有停止侵害专利权案](https://www.chinacourt.cn/article/detail/2018/12/id/3608048.shtml)
+- [完善行为保全制度 有效保护知识产权 答问-中国法院网](https://www.chinacourt.cn/article/detail/2018/12/id/3608036.shtml)
+- [最高人民法院关于审查知识产权纠纷行为保全案件适用法律若干问题的规定](https://www.chinacourt.cn/law/detail/2018/12/id/149822.shtml)
+
+
+
+## 带有超链接的列表项
+
+[small-text]
+
+- [禁止向公众提供中超联赛摄影作品案](https://www.chinacourt.cn/article/detail/2018/12/id/3608040.shtml)
+- [杨季康申请责令停止拍卖钱钟书书信手稿案-中国法院网](https://www.chinacourt.cn/article/detail/2018/12/id/3608044.shtml )
+- [美国礼来公司等与黄某某侵害商业秘密纠纷诉中行为保全案-中国法院网](https://www.chinacourt.cn/article/detail/2018/12/id/3608045.shtml)
+- [网易云音乐侵害传播权诉前保全案](https://www.chinacourt.cn/article/detail/2018/12/id/3608047.shtml)
+- [许赞有停止侵害专利权案](https://www.chinacourt.cn/article/detail/2018/12/id/3608048.shtml)
+- [完善行为保全制度 有效保护知识产权 答问-中国法院网](https://www.chinacourt.cn/article/detail/2018/12/id/3608036.shtml)
+- [最高人民法院关于审查知识产权纠纷行为保全案件适用法律若干问题的规定](https://www.chinacourt.cn/law/detail/2018/12/id/149822.shtml)
+
+
+
+
+# 基础功能
+
+## 手动分页
+
+手动分页可以使用 **横线分割**:
+
+```text
+slide 1
+---
+slide 2
+---
+slide 3
+```
+
+
+## 快捷键
+
+[small-text]
+
+Press...
+
+* <kbd>Space</kbd>, <kbd>↓</kbd>, <kbd>→</kbd> or <kbd>PgDn</kbd> to go to the next slide,
+* <kbd>↑</kbd>, <kbd>←</kbd> or <kbd>PgUp</kbd> to go to the previous slide,
+* <kbd>F</kbd>, <kbd>F5</kbd> or <kbd>Esc</kbd> to toggle fullscreen/presentation mode,
+* <kbd>.</kbd> to turn the screen black (and back again),
+* <kbd>n</kbd> to open a window with your presenter notes (more on the next slide),
+* <kbd>t</kbd> to start (or dismiss) a timer shown in the presenter notes window, and
+* a slide number, e.g. <kbd>1</kbd> <kbd>7</kbd>, followed by <kbd>Enter</kbd>, to jump to that slide.
+
+These little presenter gadgets should work no problem.
+
+
+## 打印PDF
+
+您可以使用浏览器将**幻灯片**打印成 **PDF** 文件，从而导出 PDF 版本。 根据经验，这在 `Chrome` 浏览器中效果最好，因为它尊重 `@page CSS` 选择器。
+
+!!!
+    在打印模式中，将“边距”设置为“无”，并确保启用“背景图形”选项。
+
+
+%%特色功能%%
+
+# 特色功能
+
+
+## 自定义设置
+
+[small-text]
+
+请务必在加载 `markdeep-slides.js` 之前定义您的选项
+
+```js
+<script>
+markdeepSlidesOptions= {
+    aspectRatio: 16 / 10, // 幻灯片的宽高比
+    theme: "simple", // 主题 – "simple"、"deepsea"、"serif" 或自定义样式表路径
+    fontSize: 28, // 基础字号，相对于幻灯片显示尺寸
+    diagramZoom: 1.0, // markdeep 图表缩放系数
+    totalSlideNumber: true, // 是否在页码旁显示总页数？
+    progressBar: true, // 是否在每张幻灯片上显示演示进度条？
+    breakOnHeadings: true, // 是否不仅遇到“---”时分页，一级、二级标题也强制分页？
+    incremental: false, //是否全局逐条播放
+    incrementalFlat: false, //是否全局顶层逐条播放
+    slideChangeHook: (oldSlide, newSlide) => {}, // 切换幻灯片时执行的函数，接收旧页码和新页码
+    modeChangeHook: (newMode) => {} // 模式切换时执行的函数，接收新模式，如 "draft" 或 "presentation"
+};
+</script>
+```
+
+## 主题、章节与目录
+
+- 默认会以**一级标题**作为幻灯片的**主题**
+- 全部的**主题**会在**幻灯片的顶部**展示
+- 当前幻灯片的主题会以**选项卡**的方式被激活
+- 如果你希望**手动分割**主题，可以使用**`%%主题%%`**语法
+- **`%%主题%%`**的优先级更高
+- ! 现在你可以看一下幻灯片的顶部和左下角！
+
+
+;;;;;;
+
+
+```Markdown
+%%主题一%%
+
+# 第一章
+
+## 幻灯片1
+
+%%主题二%%
+
+# 第二章
+
+## 幻灯片2
+
+%%主题二%%
+
+
+```
+
+
+## 分栏
+
+支持双栏并自定义分栏宽度比例，例如
+
+```
+
+左侧内容
+
+;;;3:2;;;
+
+右侧内容
+
+![3:2右侧图片](figure.jpg)
+
+```
+
+;;;3:2;;;
+
+![3:2右侧图片](https://www.apple.com.cn/macbook-air/images/overview/connectivity/connectivity_displays__er91a9b94oeq_large_2x.jpg style="width:15em")
+
+
+## Admonition
+
+!!!
+    This is an admonition.
+
+!!! error: Red admonition
+    Another one, but it's red. Must be danger ahead!
+
+!!! warning: This is ~~America~~ a warning
+    Yellowish. Not quite as much danger, I guess.
+
+!!! tip: Green
+    Now the 🚦 is complete.
+
+
+
+## 支持与Obsidian兼容的Admonition格式
+
+```Markdown
+> [!error] error title
+>
+> - content
+>   - content
+>   - content
+> - content
+>   - content
+>   - content
+
+```
+
+;;;3:2;;;
+
+
+> [!question] warning title
+>
+> - content
+>   - content
+>   - content
+> - content
+>   - content
+>   - content
+
+
+
+
+## List Admonition
+
+[incremental]
+
+在大纲符号后面添加 **`!,?,%,&,@`** 五种符号，可以分别上红橙绿蓝紫五种背景色
+
+
+```
+- ! 红色
+  - 无色
+    - ? 橙色
+- & 蓝色
+- % 绿色
+  - @ 紫色
+```
+
+;;;;;;
+
+- ! 红色
+  - 无色
+    - ? 橙色
+- & 蓝色
+- % 绿色
+  - @ 紫色
+
+
+
+
+## 支持行号的代码块
+
+```Haskell linenumbers
+cgenExpr l (K.TElemR e1 e2 ty) = do
+    a <- cgenExpr l e1
+    b <- cgenExpr l e2
+    liput l b $ Right e2
+    b' <- toVoidPtr (K.typeOf e2) b
+    c &lt;- callCbits voidPtr "kltollvm_row_elemr" [a, toOperand $ tyValueToC $ K.typeOf e2, b']
+
+    -- Make sure to return the correct value (previous function call returns a
+    -- void pointer).
+    fromVoidPtr ty c
+```
+[Listing [hask]: An out-of context piece of Haskell code.]
+
+
+## 逐行播放大纲
+
+[incremental]
+
+* 你可以通过在当前幻灯片使用`\[incremental\]`来要求逐行播放大纲
+    * ...arbitrarily...
+        - ...nest...
+        - ...lists.
+    * This...
+      1. ...works with numbered...
+      2. ...lists...
+          1. ...too!
+
+## 逐项播放大纲
+
+[incremental-flat]
+
+- 你可以通过在当前幻灯片使用`\[incremental-flat\]`来要求逐项播放一级大纲
+    - ...arbitrarily...
+        - ...nest...
+        - ...lists.
+- This...
+    1. ...works with numbered...
+    2. ...lists...
+        1. ...too!
+
+
+## 自定义逐步播放
+
+你可以使用围栏语法来控制元素的出现顺序
+
+```
+先出现的内容
+:::appear
+后出现的内容
+:::
+
+```
+;;;;;;
+
+:::appear
+
+!!! error: 后出现的内容
+    后出现的内容可以是任何东西，比如图片
+
+
+![后出现的图片](https://www.apple.com.cn/macbook-air/images/overview/connectivity/connectivity_displays__er91a9b94oeq_large_2x.jpg style="width:15em")
+    
+:::
+
+
+## 控制元素的播放顺序
+
+
+不隐藏的元素
+
+:::appear3
+
+第三个出现的元素
+
+:::
+
+:::appear2
+
+
+第二个出现的元素
+
+:::
+
+:::appear6
+
+第一个出现的元素
+
+:::
+
+
+## 超过幻灯片末尾的内容会被切断，所以要小心！
+
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmodtempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit essecillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
+
+
+## 使用小号字
+
+[small-text]
+
+- 你可以使用`\[small-text\]`来缩小当前幻灯片的字号Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. 
+
+也可以用`<small>`文本`</small>`来进一步缩小字体
+
+<small>
+
+- Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmodtempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit essecillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
+
+</small>
+
+
+<script src="markdeep-slides/slides-init.js"></script>
