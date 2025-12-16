@@ -5,6 +5,14 @@
 本项目在原有基础上进行了大量优化和功能增强，尤其侧重于提升实用性和视觉表现力。新增了包括但不限于**自动导航栏、自动目录、自定义比例双栏、大纲逐条播放、Obsidian Callout 语法兼容**等现代化功能。
 
 
+> [!attention] Obsidian插件
+> 
+> 我为这个项目开发了一个Obsidian插件： [wenbopeng/Obsidian-markdeep-slides](https://github.com/wenbopeng/Obsidian-markdeep-slides)
+
+
+
+
+
 - 教程与示例：Tutorial.html
 - 示例1：Example1.html
 - 示例2：Example2专利法第九章-专利侵权-04专利侵权的抗辩事由.html
