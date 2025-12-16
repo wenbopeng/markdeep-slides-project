@@ -35,19 +35,7 @@ https://github.com/user-attachments/assets/52670bdc-39aa-4d61-992d-f7d9d5d3ad4b
 3.  **编写内容**: 将以下模板复制到您的 HTML 文件中，然后在 `<!-- Your Markdeep content starts here -->` 之后开始用 Markdown 编写您的幻灯片内容。
 
 ```html
-<!DOCTYPE html>
-<html>
-<head>
 <meta charset="utf-8">
-<title>我的幻灯片</title>
-<!-- 基础重置样式 -->
-<link rel="stylesheet" href="markdeep-slides/reset.css">
-<!-- 幻灯片核心样式 -->
-<link rel="stylesheet" href="markdeep-slides/markdeep-slides.css">
-<!-- 主题样式 (可替换) -->
-<link rel="stylesheet" href="markdeep-slides/themes/simple.css">
-</head>
-<body>
 
 <!-- Your Markdeep content starts here -->
 
@@ -69,25 +57,45 @@ https://github.com/user-attachments/assets/52670bdc-39aa-4d61-992d-f7d9d5d3ad4b
 
 这是新的一页。
 
-<!-- Markdeep & Slides scripts -->
+<!-- Markdeep slides stuff -->
 <script>
-// (可选) 配置项
-var markdeepSlidesOptions = {
-    // 例如，更改主题或宽高比
-    // theme: 'deepsea',
-    // aspectRatio: 16 / 9
+markdeepSlidesOptions= {
+    aspectRatio: 16 / 9,      // 幻灯片的宽高比
+    theme: "/Users/wenbo/Pandoc/MarkDeep/markdeep-slides/themes/simple.css",          // 主题 – "simple"、"deepsea"、"serif" 或自定义样式表路径
+    fontSize: 28,             // 基础字号，相对于幻灯片显示尺寸
+    diagramZoom: 1.0,         // markdeep 图表缩放系数
+    totalSlideNumber: true,  // 是否在页码旁显示总页数？
+    progressBar: true,        // 是否在每张幻灯片上显示演示进度条？
+    breakOnHeadings: true,   // 是否不仅遇到“---”时分页，一级、二级标题也强制分页？
+    slideChangeHook: (oldSlide, newSlide) => {},  // 切换幻灯片时执行的函数，接收旧页码和新页码
+    modeChangeHook: (newMode) => {}               // 模式切换时执行的函数，接收新模式，如 "draft" 或 "presentation"
 };
 </script>
-<!-- Markdeep 核心库 -->
-<script src="markdeep-slides/lib/markdeep/1.11/markdeep.min.js" charset="utf-8"></script>
-<!-- 幻灯片初始化脚本 -->
-<script src="markdeep-slides/slides-init.js" charset="utf-8"></script>
-<!-- 幻灯片核心功能脚本 -->
-<script src="markdeep-slides/markdeep-slides.js" charset="utf-8"></script>
+<link rel="stylesheet" href="markdeep-slides/lib/markdeep-relative-sizes/1.11/relativize.css">
+<link rel="stylesheet" href="markdeep-slides/markdeep-slides.css">
+<script src="markdeep-slides/markdeep-slides.js"></script>
 
-</body>
-</html>
+<!-- Markdeep stuff -->
+<script>
+    markdeepOptions = {
+        tocStyle: "none",
+        detectMath: true,
+        onLoad: function() {
+            initSlides();
+        }
+    };
+</script>
+<style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style>
+<script src="markdeep-slides/lib/markdeep/1.11/markdeep.min.js" charset="utf-8"></script>
+<script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
 ```
+
+一个更加简洁的方式是在Markdown文件的底部添加一行代码，你会看到神奇的结果：
+
+```html
+<script src="markdeep-slides/slides-init.js"></script>
+```
+
 
 4.  **打开文件**: 在浏览器中打开您创建的 HTML 文件即可看到效果。
 
