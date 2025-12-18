@@ -10,12 +10,12 @@
 > 我为这个项目开发了一个Obsidian插件： [wenbopeng/Obsidian-markdeep-slides](https://github.com/wenbopeng/Obsidian-markdeep-slides)
 
 
+# 示例
 
 
-
-- 教程与示例：Tutorial.html
-- 示例1：Example1.html
-- 示例2：Example2专利法第九章-专利侵权-04专利侵权的抗辩事由.html
+- 教程与示例：[Tutorial](https://wenbopeng.github.io/markdeep-slides-pages/Tutorial.html)
+- 示例1：[Example1](https://wenbopeng.github.io/markdeep-slides-pages/Example1)
+- 示例2：[Example2专利法第九章-专利侵权-04专利侵权的抗辩事由](https://wenbopeng.github.io/markdeep-slides-pages/Example2专利法第九章-专利侵权-04专利侵权的抗辩事由.html)
 
 https://github.com/user-attachments/assets/52670bdc-39aa-4d61-992d-f7d9d5d3ad4b
 
