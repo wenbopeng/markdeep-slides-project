@@ -476,6 +476,9 @@ function initSlides() {
     // Inject CSS for the nav bar
     injectNavBarStyles();
 
+    injectFontSizeButtonStyles();
+    addFontSizeButtonsToSlides(slides);
+
     // Create a nav bar template, then clone and prepend it to each slide
     if (sections.length > 0) {
         var navBarTemplate = createNavBarTemplate();
@@ -1096,6 +1099,92 @@ function toggleFullscreen() {
         } else if (root.msRequestFullscreen) {
             root.msRequestFullscreen();
         }
+    }
+}
+
+function injectFontSizeButtonStyles() {
+    var style = document.createElement('style');
+    style.textContent = `
+        .slide {
+            position: relative; /* Needed for absolute positioning of buttons */
+        }
+        .fontsize-buttons {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .slide:hover .fontsize-buttons {
+            opacity: 1;
+        }
+        .fontsize-buttons button {
+            padding: 2px 8px;
+            font-size: 14px;
+            background-color: #eee;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .fontsize-buttons button:hover {
+            background-color: #ddd;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function addFontSizeButtonsToSlides(slides) {
+    var buttonContainerTemplate = document.createElement('div');
+    buttonContainerTemplate.className = 'fontsize-buttons';
+
+    var smallButton = document.createElement('button');
+    smallButton.textContent = '缩小';
+    smallButton.title = '缩小字体';
+    var smallButtonOnClick = function() {
+        var slide = this.closest('.slide');
+        if (slide) {
+            slide.classList.remove('tiny-text');
+            slide.classList.add('small-text');
+        }
+    };
+
+    var tinyButton = document.createElement('button');
+    tinyButton.textContent = '更小';
+    tinyButton.title = '进一步缩小字体';
+    var tinyButtonOnClick = function() {
+        var slide = this.closest('.slide');
+        if (slide) {
+            slide.classList.remove('small-text');
+            slide.classList.add('tiny-text');
+        }
+    };
+    
+    var resetButton = document.createElement('button');
+    resetButton.textContent = '正常';
+    resetButton.title = '恢复正常字体';
+    var resetButtonOnClick = function() {
+        var slide = this.closest('.slide');
+        if (slide) {
+            slide.classList.remove('small-text');
+            slide.classList.remove('tiny-text');
+        }
+    };
+
+    buttonContainerTemplate.appendChild(resetButton);
+    buttonContainerTemplate.appendChild(smallButton);
+    buttonContainerTemplate.appendChild(tinyButton);
+
+    for (var i = 1; i < slides.length; i++) { // Start from 1 to skip title slide
+        var slide = slides[i];
+        var buttons = buttonContainerTemplate.cloneNode(true);
+        // Re-attach event listeners after cloning
+        buttons.children[0].onclick = resetButtonOnClick;
+        buttons.children[1].onclick = smallButtonOnClick;
+        buttons.children[2].onclick = tinyButtonOnClick;
+        slide.appendChild(buttons);
     }
 }
 
