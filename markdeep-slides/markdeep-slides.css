@@ -392,3 +392,22 @@ li > span.highlight-purple {
     border-left-color: #9b59b6 ; /* A nice purple color */
     background-color: #f5eef8 ; /* A very light purple */
 }
+
+.fontsize-buttons {
+    position: absolute;
+    top: calc(var(--slide-height) / 2);
+    right: 15px;
+    z-index: 1000;
+    display: grid;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.fontsize-buttons button {
+    font-size: 0.5em;
+    border: none;
+    cursor: pointer;
+    color: #bbb;
+    background-color: transparent;
+}

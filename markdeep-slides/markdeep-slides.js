@@ -1141,7 +1141,7 @@ function addFontSizeButtonsToSlides(slides) {
     buttonContainerTemplate.className = 'fontsize-buttons';
 
     var smallButton = document.createElement('button');
-    smallButton.textContent = '缩小';
+    smallButton.textContent = '○';
     smallButton.title = '缩小字体';
     var smallButtonOnClick = function() {
         var slide = this.closest('.slide');
@@ -1152,7 +1152,7 @@ function addFontSizeButtonsToSlides(slides) {
     };
 
     var tinyButton = document.createElement('button');
-    tinyButton.textContent = '更小';
+    tinyButton.textContent = '-';
     tinyButton.title = '进一步缩小字体';
     var tinyButtonOnClick = function() {
         var slide = this.closest('.slide');
@@ -1163,7 +1163,7 @@ function addFontSizeButtonsToSlides(slides) {
     };
     
     var resetButton = document.createElement('button');
-    resetButton.textContent = '正常';
+    resetButton.textContent = '+';
     resetButton.title = '恢复正常字体';
     var resetButtonOnClick = function() {
         var slide = this.closest('.slide');
