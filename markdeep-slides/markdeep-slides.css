@@ -285,7 +285,7 @@ html.presenter-notes {
 .slide.two-column .columns-container,
 .two-column .columns-container {
     display: flex;
-    gap: 2rem; /* space between columns */
+    gap: 1rem; /* space between columns */
     align-items: flex-start; /* align content to the top */
     margin: 0rem 0; /* 减少上下外边距 */
 }
@@ -297,9 +297,19 @@ html.presenter-notes {
     flex: 1; /* each column takes up equal space */
     width: 50%; /* fallback for older browsers */
     min-width: 0; /* prevent overflow issues with flexbox */
-    padding: 0.75rem; /* 减少内边距 */
+    padding: 0em 0.5em 0em 0.5em; /* 减少内边距 */
     border-radius: 8px;
     line-height: 1.4; /* 调整行高，减少垂直空间 */
+    margin-top: 0.5em;
+    font-size: 0.8em;
+}
+
+
+.slide.two-column .column-left,
+.slide.two-column .column-right,
+.two-column .column-left p,
+.two-column .column-right p{
+    margin: 0.5rem;
 }
 
 .slide.two-column .column-left,
@@ -427,4 +437,9 @@ li > span.highlight-purple {
     cursor: pointer;
     color: #bbb;
     background-color: transparent;
+}
+
+.md .admonition p{
+    padding-top: 0%;
+    line-height: 1em;
 }

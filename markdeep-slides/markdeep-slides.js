@@ -688,6 +688,7 @@ function injectNavBarStyles() {
             margin-bottom: 0.5em;
             text-align: center;
         }
+
         .toc-list {
             text-align: left;
             margin: 0 auto;
@@ -696,6 +697,10 @@ function injectNavBarStyles() {
             overflow: hidden;
             column-width: 18em;
             column-gap: 2em;
+        }
+        .toc-list.single-column {
+            column-width: auto;
+            column-count: 1;
         }
         .toc-list li {
             margin-bottom: 0.5em;
@@ -751,6 +756,8 @@ function createTocSlide(totalSlideCount) {
 
     var list = document.createElement('ul');
     list.className = "toc-list"; // Use class for styling
+    // Store reference to the list for later use by the toggle button
+    list.dataset.tocList = true;
 
     for (var section of sections) {
         var item = document.createElement('li');
@@ -1247,6 +1254,35 @@ function addFontSizeButtonsToSlides(slides) {
         buttons.children[0].onclick = resetButtonOnClick;
         buttons.children[1].onclick = smallButtonOnClick;
         buttons.children[2].onclick = tinyButtonOnClick;
+        
+        // Check if this is the toc slide (slide1) and add the toggle button
+        if (slide.id === 'slide1') {
+            var tocList = slide.querySelector('.toc-list');
+            if (tocList) {
+                var toggleButton = document.createElement('button');
+                toggleButton.textContent = '=';
+                toggleButton.title = '切换目录显示模式';
+                toggleButton.onclick = function() {
+                    tocList.classList.toggle('single-column');
+                    if (tocList.classList.contains('single-column')) {
+                        this.textContent = '▶️';
+                    } else {
+                        this.textContent = '🔽';
+                    }
+                };
+                
+                // Copy styles from fontsize-buttons button
+                toggleButton.style.padding = '2px 8px';
+                toggleButton.style.fontSize = '14px';
+                toggleButton.style.backgroundColor = '#eee';
+                toggleButton.style.border = '1px solid #ccc';
+                toggleButton.style.borderRadius = '4px';
+                toggleButton.style.cursor = 'pointer';
+                
+                buttons.appendChild(toggleButton);
+            }
+        }
+        
         slide.appendChild(buttons);
     }
 }
