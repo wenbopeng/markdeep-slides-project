@@ -378,18 +378,18 @@ html.presenter-notes {
 }
 
 /* For 'appear' blocks (show element as a whole) */
-[class^="appear"] {
+[class*="appear"] {
     /* Dim in draft view */
     opacity: 0.5;
     transition: opacity 0.4s ease-in-out;
 }
 
-.presentation [class^="appear"] {
+.presentation [class*="appear"] {
     /* Fully hide in presentation view */
     opacity: 0;
 }
 
-[class^="appear"].visible {
+[class*="appear"].visible {
     /* Make visible when class is added */
     opacity: 1;
 }
