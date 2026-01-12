@@ -318,16 +318,24 @@ html.presenter-notes {
 }
 
 .slide.two-column .column-left,
-.two-column .column-left,
-.two-column-appear .column-left {
+.two-column .column-left {
     background-color: #e6f2ff; /* 浅蓝色底纹 */
 }
 
 .slide.two-column .column-right,
-.two-column .column-right,
+.two-column .column-right {
+    background-color: #e6f2ff; /* 浅蓝色底纹 */
+}
+
+/* Restore background color for two-column-appear */
+.two-column-appear .column-left,
 .two-column-appear .column-right {
     background-color: #e6f2ff; /* 浅蓝色底纹 */
 }
+
+/* Ensure two-column-appear columns with appear1/appear2 classes are properly animated */
+/* The existing [class^="appear"] styles will handle the opacity transition */
+/* This ensures the entire column (including background) appears sequentially */
 
 /* 小字标签内的字号 */
 .md small{

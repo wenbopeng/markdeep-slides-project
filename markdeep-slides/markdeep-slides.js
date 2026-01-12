@@ -150,7 +150,8 @@ function processFencedBlocks(nodes) {
                         
                         // Create columns with proper appear classes if it's a two-column-appear block
                         if (blockType === 'two-column-appear') {
-                            // Make the entire columns appear sequentially, including background
+                            // Add appear1 and appear2 classes directly to columns
+                            // This ensures the entire column (including background) appears sequentially
                             wrapper.innerHTML = `
                                 <div class="columns-container">
                                     <div class="${leftColumnClass} appear1" style="flex: ${leftRatio};">${leftContent}</div>
@@ -1206,7 +1207,8 @@ function showSlide(slideNum) {
             }
             
             // 2. Gather all 'appear' blocks and sort them into default or numbered
-            var appearBlocks = currentSlideEl.querySelectorAll('[class^="appear"]');
+            // Use [class*="appear"] to match elements that contain 'appear' in their class list
+            var appearBlocks = currentSlideEl.querySelectorAll('[class*="appear"]');
             var orderRegex = /appear(\d+)/;
     
             appearBlocks.forEach(function(block) {
