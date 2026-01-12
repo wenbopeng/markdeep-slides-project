@@ -188,6 +188,19 @@ function initSlides() {
     // break document into slides
     var md = document.querySelector("body > .md");
     var es = Array.from(md.childNodes);
+    
+    // Extract logo path from the document
+    var logoPath = null;
+    // Check for logo: syntax in the document
+    var documentText = md.textContent;
+    var logoMatch = documentText.match(/logo:\s*([^\s\n]+)/i);
+    if (logoMatch) {
+        logoPath = logoMatch[1].trim();
+        // Remove the logo line from the document to avoid it being displayed
+        md.innerHTML = md.innerHTML.replace(/logo:\s*([^\s\n]+)/i, '');
+        // Re-extract child nodes after removing logo line
+        es = Array.from(md.childNodes);
+    }
 
     function isHeadingSlideBreak(e) {
         return options.breakOnHeadings && (e.tagName == "H1" || e.tagName == "H2");
@@ -236,6 +249,15 @@ function initSlides() {
             var slide = document.createElement('div');
             slide.className = "slide";
             slide.id = "slide" + slideCount;
+            
+            // Add logo to all slides if logo path is available
+            if (logoPath) {
+                var logoImg = document.createElement('img');
+                logoImg.className = "slide-logo";
+                logoImg.src = logoPath;
+                logoImg.alt = "Logo";
+                slide.appendChild(logoImg);
+            }
 
             // slide number (skip title slide)
             if (slideCount != 0) {
@@ -701,6 +723,17 @@ function injectNavBarStyles() {
         .toc-list.single-column {
             column-width: auto;
             column-count: 1;
+        }
+        
+        /* Logo styles */
+        .slide-logo {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            max-width: 100px;
+            max-height: 100px;
+            opacity: 0.8;
         }
         .toc-list li {
             margin-bottom: 0.5em;
