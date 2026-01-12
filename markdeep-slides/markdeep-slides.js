@@ -149,16 +149,12 @@ function processFencedBlocks(nodes) {
                         var rightColumnClass = 'column-right';
                         
                         // Create columns with proper appear classes if it's a two-column-appear block
-                        // Use nested appear1 and appear2 blocks to leverage existing appear mechanism
                         if (blockType === 'two-column-appear') {
+                            // Make the entire columns appear sequentially, including background
                             wrapper.innerHTML = `
                                 <div class="columns-container">
-                                    <div class="${leftColumnClass}" style="flex: ${leftRatio};">
-                                        <div class="appear1">${leftContent}</div>
-                                    </div>
-                                    <div class="${rightColumnClass}" style="flex: ${rightRatio};">
-                                        <div class="appear2">${rightContent}</div>
-                                    </div>
+                                    <div class="${leftColumnClass} appear1" style="flex: ${leftRatio};">${leftContent}</div>
+                                    <div class="${rightColumnClass} appear2" style="flex: ${rightRatio};">${rightContent}</div>
                                 </div>
                             `;
                         } else {
