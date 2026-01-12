@@ -189,18 +189,29 @@ function initSlides() {
     var md = document.querySelector("body > .md");
     var es = Array.from(md.childNodes);
     
-    // Extract logo path from the document
+    // Extract logo paths from the document
     var logoPath = null;
-    // Check for logo: syntax in the document
+    var logo1Path = null;
+    
+    // Check for logo1: syntax in the document
     var documentText = md.textContent;
-    var logoMatch = documentText.match(/logo:\s*([^\s\n]+)/i);
+    var logo1Match = documentText.match(/logo1:\s*([^\s\n]+)/i);
+    if (logo1Match) {
+        logo1Path = logo1Match[1].trim();
+        // Remove the logo1 line from the document to avoid it being displayed
+        md.innerHTML = md.innerHTML.replace(/logo1:\s*([^\s\n]+)/i, '');
+    }
+    
+    // Check for logo: syntax in the document
+    var logoMatch = md.textContent.match(/logo:\s*([^\s\n]+)/i);
     if (logoMatch) {
         logoPath = logoMatch[1].trim();
         // Remove the logo line from the document to avoid it being displayed
         md.innerHTML = md.innerHTML.replace(/logo:\s*([^\s\n]+)/i, '');
-        // Re-extract child nodes after removing logo line
-        es = Array.from(md.childNodes);
     }
+    
+    // Re-extract child nodes after removing logo lines
+    es = Array.from(md.childNodes);
 
     function isHeadingSlideBreak(e) {
         return options.breakOnHeadings && (e.tagName == "H1" || e.tagName == "H2");
@@ -250,11 +261,39 @@ function initSlides() {
             slide.className = "slide";
             slide.id = "slide" + slideCount;
             
-            // Add logo to all slides if logo path is available
-            if (logoPath) {
+            // Determine which logo to use based on slide content
+            var currentLogoPath = null;
+            
+            // Check if the slide starts with an H1 or H2 tag
+            var hasH1 = false;
+            var hasH2 = false;
+            
+            // Check the currentSlide array for H1 or H2 tags
+            for (var k = 0; k < currentSlide.length; k++) {
+                var node = currentSlide[k];
+                if (node.tagName === "H1") {
+                    hasH1 = true;
+                    break;
+                } else if (node.tagName === "H2") {
+                    hasH2 = true;
+                    break;
+                }
+            }
+            
+            // Choose logo based on heading type
+            if (hasH1 && logo1Path) {
+                // Use logo1 for slides starting with H1
+                currentLogoPath = logo1Path;
+            } else if (logoPath) {
+                // Use logo for other slides (including those starting with H2)
+                currentLogoPath = logoPath;
+            }
+            
+            // Add the appropriate logo to the slide
+            if (currentLogoPath) {
                 var logoImg = document.createElement('img');
                 logoImg.className = "slide-logo";
-                logoImg.src = logoPath;
+                logoImg.src = currentLogoPath;
                 logoImg.alt = "Logo";
                 slide.appendChild(logoImg);
             }
