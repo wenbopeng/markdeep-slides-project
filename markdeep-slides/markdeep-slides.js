@@ -38,7 +38,7 @@ function processFencedBlocks(nodes) {
     var startFourColonRegex = /^::::(appear\d*)\s*$/;
     var endFourColonRegex = /^::::\s*$/;
     // Three-colon patterns for all block types (including appear, for backward compatibility)
-    var startThreeColonRegex = /^:::(incremental|incremental-flat|appear\d*|big|small|tiny|two-column)(?:\s+([0-9]+:[0-9]+))?\s*$/;
+    var startThreeColonRegex = /^:::(incremental|incremental-flat|appear\d*|big|small|tiny|two-column|two-column-appear)(?:\s+([0-9]+:[0-9]+))?\s*$/;
     var endThreeColonRegex = /^:::\s*$/;
 
     for (var i = 0; i < nodes.length; i++) {
@@ -145,10 +145,19 @@ function processFencedBlocks(nodes) {
                             }
                         }
                         
+                        // For two-column-appear, add appear1 to left and appear2 to right for sequential animation
+                        var leftColumnClass = 'column-left';
+                        var rightColumnClass = 'column-right';
+                        
+                        if (blockType === 'two-column-appear') {
+                            leftColumnClass += ' appear1';
+                            rightColumnClass += ' appear2';
+                        }
+                        
                         wrapper.innerHTML = `
                             <div class="columns-container">
-                                <div class="column-left" style="flex: ${leftRatio};">${leftContent}</div>
-                                <div class="column-right" style="flex: ${rightRatio};">${rightContent}</div>
+                                <div class="${leftColumnClass}" style="flex: ${leftRatio};">${leftContent}</div>
+                                <div class="${rightColumnClass}" style="flex: ${rightRatio};">${rightContent}</div>
                             </div>
                         `;
                     } else {
