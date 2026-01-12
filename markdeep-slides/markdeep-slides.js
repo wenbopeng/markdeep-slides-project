@@ -264,6 +264,9 @@ function initSlides() {
             // Determine which logo to use based on slide content
             var currentLogoPath = null;
             
+            // Check if this is the title slide (slideCount == 0)
+            var isTitleSlide = (slideCount === 0);
+            
             // Check if the slide starts with an H1 or H2 tag
             var hasH1 = false;
             var hasH2 = false;
@@ -280,12 +283,15 @@ function initSlides() {
                 }
             }
             
-            // Choose logo based on heading type
-            if (hasH1 && logo1Path) {
-                // Use logo1 for slides starting with H1
-                currentLogoPath = logo1Path;
+            // Choose logo based on slide type
+            if ((isTitleSlide || hasH1)) {
+                // For title slide and H1 slides, only use logo1 if it exists
+                if (logo1Path) {
+                    currentLogoPath = logo1Path;
+                }
+                // If logo1 doesn't exist, don't show any logo for these slides
             } else if (logoPath) {
-                // Use logo for other slides (including those starting with H2)
+                // For other slides (including those starting with H2), use logo if it exists
                 currentLogoPath = logoPath;
             }
             
