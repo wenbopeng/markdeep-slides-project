@@ -29,8 +29,10 @@ function processFencedBlocks(nodes) {
     var capturing = false;
     var capturedNodes = [];
     var blockType = '';
+    var blockOptions = {};
 
-    var startRegex = /^:::(incremental|incremental-flat|appear\d*|big|small|tiny)\s*$/;
+    // Updated regex to capture block type and optional ratio for two-column
+    var startRegex = /^:::(incremental|incremental-flat|appear\d*|big|small|tiny|two-column)(?:\s+([0-9]+:[0-9]+))?\s*$/;
     var endRegex = /^:::\s*$/;
 
     for (var i = 0; i < nodes.length; i++) {
@@ -42,6 +44,20 @@ function processFencedBlocks(nodes) {
         if (match) {
             capturing = true;
             blockType = match[1];
+            blockOptions = {};
+            
+            // Check if ratio is provided for two-column block
+            if (blockType === 'two-column' && match[2]) {
+                var ratioParts = match[2].split(':');
+                blockOptions.ratio = {
+                    left: parseInt(ratioParts[0], 10) || 1,
+                    right: parseInt(ratioParts[1], 10) || 1
+                };
+            } else {
+                // Default ratio
+                blockOptions.ratio = { left: 1, right: 1 };
+            }
+            
             capturedNodes = [];
             continue;
         }
@@ -50,14 +66,60 @@ function processFencedBlocks(nodes) {
             if (capturing) {
                 var wrapper = document.createElement('div');
                 wrapper.className = blockType;
-                for(var j = 0; j < capturedNodes.length; j++) {
-                    wrapper.appendChild(capturedNodes[j]);
+                
+                if (blockType === 'two-column') {
+                    // Process two-column content with ;;;;;; separator
+                    var content = '';
+                    for(var j = 0; j < capturedNodes.length; j++) {
+                        var childNode = capturedNodes[j];
+                        if (childNode.nodeType === 3) {
+                            content += childNode.textContent;
+                        } else {
+                            content += childNode.outerHTML || childNode.textContent;
+                        }
+                    }
+                    
+                    // Split content by ;;;;;;
+                    var parts = content.split(';;;;;;');
+                    if (parts.length >= 2) {
+                        var leftContent = parts[0].trim();
+                        var rightContent = parts.slice(1).join(';;;;;;').trim();
+                        
+                        // Get ratio from blockOptions
+                        var leftRatio = blockOptions.ratio.left;
+                        var rightRatio = blockOptions.ratio.right;
+                        
+                        wrapper.innerHTML = `
+                            <div class="columns-container">
+                                <div class="column-left" style="flex: ${leftRatio};">${leftContent}</div>
+                                <div class="column-right" style="flex: ${rightRatio};">${rightContent}</div>
+                            </div>
+                        `;
+                    } else {
+                        // If no separator found, just put all content in left column
+                        var leftRatio = blockOptions.ratio.left;
+                        var rightRatio = blockOptions.ratio.right;
+                        
+                        wrapper.innerHTML = `
+                            <div class="columns-container">
+                                <div class="column-left" style="flex: ${leftRatio};">${content.trim()}</div>
+                                <div class="column-right" style="flex: ${rightRatio};"></div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    // Original behavior for other block types
+                    for(var j = 0; j < capturedNodes.length; j++) {
+                        wrapper.appendChild(capturedNodes[j]);
+                    }
                 }
+                
                 newNodes.push(wrapper);
             }
             capturing = false;
             capturedNodes = [];
             blockType = '';
+            blockOptions = {};
             continue;
         }
 
@@ -319,7 +381,7 @@ function initSlides() {
                                                     const contentToSplit = titleMatch ? content.substring(titleMatch[0].length) : content;
                                                     
                                                     // Regex to find separator (inline or in <p>) and capture optional ratio
-                                                    const separatorRegex = /<p>\s*;;;\s*(?:([0-9]+:[0-9]+)\s*)?;;;\s*<\/p>|;;;(?:\s*([0-9]+:[0-9]+)\s*)?;;;/;
+                                                    const separatorRegex = /<p>\s*;;;\s*(?:([0-9]+:[0-9]+)\s*)?;;;\s*<\/p>|;;;(?:\s*([0-9]+:[0-9]+)\s*)?;;;\s*/;
                                                     const separatorMatch = contentToSplit.match(separatorRegex);
                                     
                                                     let leftContent = contentToSplit; // Default: all content in left column if separator logic fails
@@ -350,7 +412,8 @@ function initSlides() {
                                                             <div class="column-right" style="flex: ${rightRatio};">${rightContent}</div>
                                                         </div>
                                                     `;
-                                                }                        slide.appendChild(sc);
+                                                }
+                                                slide.appendChild(sc);
                                                 // 如果该幻灯片以 <h2> 开头，则在左下方显示所属的 H1 标题
                                                 if (currentSlide.length > 0 && currentSlide[0].tagName === "H2" && currentH1Title) {
                                                     var chapterLabel = document.createElement('div');
@@ -1396,7 +1459,10 @@ function keyPress(event) {
         return;
     }
 };
-document.body.onkeydown = keyPress;
+// Wait for DOM to be fully loaded before setting event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.onkeydown = keyPress;
+});
 
 // set --vw and --vw css variables to viewport size, EXCLUDING the scroll bars
 // (the css units vw and vh include them, which is less than ideal), in order to
