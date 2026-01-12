@@ -145,21 +145,31 @@ function processFencedBlocks(nodes) {
                             }
                         }
                         
-                        // For two-column-appear, add appear1 to left and appear2 to right for sequential animation
                         var leftColumnClass = 'column-left';
                         var rightColumnClass = 'column-right';
                         
+                        // Create columns with proper appear classes if it's a two-column-appear block
+                        // Use nested appear1 and appear2 blocks to leverage existing appear mechanism
                         if (blockType === 'two-column-appear') {
-                            leftColumnClass += ' appear1';
-                            rightColumnClass += ' appear2';
+                            wrapper.innerHTML = `
+                                <div class="columns-container">
+                                    <div class="${leftColumnClass}" style="flex: ${leftRatio};">
+                                        <div class="appear1">${leftContent}</div>
+                                    </div>
+                                    <div class="${rightColumnClass}" style="flex: ${rightRatio};">
+                                        <div class="appear2">${rightContent}</div>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            // Normal two-column block without appear effect
+                            wrapper.innerHTML = `
+                                <div class="columns-container">
+                                    <div class="${leftColumnClass}" style="flex: ${leftRatio};">${leftContent}</div>
+                                    <div class="${rightColumnClass}" style="flex: ${rightRatio};">${rightContent}</div>
+                                </div>
+                            `;
                         }
-                        
-                        wrapper.innerHTML = `
-                            <div class="columns-container">
-                                <div class="${leftColumnClass}" style="flex: ${leftRatio};">${leftContent}</div>
-                                <div class="${rightColumnClass}" style="flex: ${rightRatio};">${rightContent}</div>
-                            </div>
-                        `;
                     } else {
                         // Original behavior for other block types
                         for(var j = 0; j < capturedNodes.length; j++) {
