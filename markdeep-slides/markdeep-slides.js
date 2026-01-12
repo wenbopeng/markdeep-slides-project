@@ -96,7 +96,7 @@ function processFencedBlocks(nodes) {
                     var wrapper = document.createElement('div');
                     wrapper.className = blockType;
                     
-                    if (blockType === 'two-column') {
+                    if (blockType === 'two-column' || blockType === 'two-column-appear') {
                         // Process two-column content with ;;;ratio;;; or ;;;;;; separator
                         var content = '';
                         for(var j = 0; j < capturedNodes.length; j++) {
