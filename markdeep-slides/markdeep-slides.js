@@ -30,25 +30,44 @@ function processFencedBlocks(nodes) {
     var capturedNodes = [];
     var blockType = '';
     var blockOptions = {};
+    // Track nested fence levels for proper processing
+    var fenceStack = [];
 
-    // Updated regex to capture block type and optional ratio for two-column
-    var startRegex = /^:::(incremental|incremental-flat|appear\d*|big|small|tiny|two-column)(?:\s+([0-9]+:[0-9]+))?\s*$/;
-    var endRegex = /^:::\s*$/;
+    // Define regex patterns
+    // Four-colon patterns for appear blocks (highest priority)
+    var startFourColonRegex = /^::::(appear\d*)\s*$/;
+    var endFourColonRegex = /^::::\s*$/;
+    // Three-colon patterns for all block types (including appear, for backward compatibility)
+    var startThreeColonRegex = /^:::(incremental|incremental-flat|appear\d*|big|small|tiny|two-column)(?:\s+([0-9]+:[0-9]+))?\s*$/;
+    var endThreeColonRegex = /^:::\s*$/;
 
     for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
         // Ensure node has textContent property before trimming
         var text = node.textContent ? node.textContent.trim() : '';
-        var match = text.match(startRegex);
-
-        if (match) {
+        
+        // Check for fence start patterns
+        var fourColonMatch = text.match(startFourColonRegex);
+        var threeColonMatch = text.match(startThreeColonRegex);
+        
+        if (fourColonMatch) {
+            // Four-colon appear block start
+            fenceStack.push({ type: 'four-colon', blockType: fourColonMatch[1] });
             capturing = true;
-            blockType = match[1];
+            blockType = fourColonMatch[1];
+            blockOptions = { ratio: { left: 1, right: 1 } };
+            capturedNodes = [];
+            continue;
+        } else if (threeColonMatch) {
+            // Three-colon block start
+            fenceStack.push({ type: 'three-colon', blockType: threeColonMatch[1] });
+            capturing = true;
+            blockType = threeColonMatch[1];
             blockOptions = {};
             
             // Check if ratio is provided for two-column block
-            if (blockType === 'two-column' && match[2]) {
-                var ratioParts = match[2].split(':');
+            if (blockType === 'two-column' && threeColonMatch[2]) {
+                var ratioParts = threeColonMatch[2].split(':');
                 blockOptions.ratio = {
                     left: parseInt(ratioParts[0], 10) || 1,
                     right: parseInt(ratioParts[1], 10) || 1
@@ -61,81 +80,103 @@ function processFencedBlocks(nodes) {
             capturedNodes = [];
             continue;
         }
-
-        if (endRegex.test(text)) {
-            if (capturing) {
-                var wrapper = document.createElement('div');
-                wrapper.className = blockType;
+        
+        // Check for fence end patterns
+        var isFourColonEnd = endFourColonRegex.test(text);
+        var isThreeColonEnd = endThreeColonRegex.test(text);
+        
+        if (isFourColonEnd || isThreeColonEnd) {
+            if (capturing && fenceStack.length > 0) {
+                var currentFence = fenceStack[fenceStack.length - 1];
                 
-                if (blockType === 'two-column') {
-                    // Process two-column content with ;;;ratio;;; or ;;;;;; separator
-                    var content = '';
-                    for(var j = 0; j < capturedNodes.length; j++) {
-                        var childNode = capturedNodes[j];
-                        if (childNode.nodeType === 3) {
-                            content += childNode.textContent;
-                        } else {
-                            content += childNode.outerHTML || childNode.textContent;
+                // Check if the end fence matches the current fence type
+                if ((isFourColonEnd && currentFence.type === 'four-colon') || 
+                    (isThreeColonEnd && currentFence.type === 'three-colon')) {
+                    
+                    var wrapper = document.createElement('div');
+                    wrapper.className = blockType;
+                    
+                    if (blockType === 'two-column') {
+                        // Process two-column content with ;;;ratio;;; or ;;;;;; separator
+                        var content = '';
+                        for(var j = 0; j < capturedNodes.length; j++) {
+                            var childNode = capturedNodes[j];
+                            if (childNode.nodeType === 3) {
+                                content += childNode.textContent;
+                            } else {
+                                content += childNode.outerHTML || childNode.textContent;
+                            }
                         }
-                    }
-                    
-                    // Check for ;;;ratio;;; syntax first
-                    var leftRatio = blockOptions.ratio.left;
-                    var rightRatio = blockOptions.ratio.right;
-                    var leftContent = '';
-                    var rightContent = '';
-                    
-                    // Regex to find separator (inline or in <p>) and capture optional ratio
-                    var separatorRegex = /<p>\s*;;;\s*(?:([0-9]+:[0-9]+)\s*)?;;;\s*<\/p>|;;;(?:\s*([0-9]+:[0-9]+)\s*)?;;;\s*/;
-                    var separatorMatch = content.match(separatorRegex);
-                    
-                    if (separatorMatch) {
-                        // Found ;;;ratio;;; syntax
-                        var separatorHTML = separatorMatch[0];
-                        // The ratio can be in the first capture group (for <p>) or the second (for inline)
-                        var ratioStr = separatorMatch[1] || separatorMatch[2] || '1:1';
                         
-                        var ratioParts = ratioStr.split(':');
-                        leftRatio = parseInt(ratioParts[0], 10) || 1;
-                        rightRatio = parseInt(ratioParts[1], 10) || 1;
+                        // Check for ;;;ratio;;; syntax first
+                        var leftRatio = blockOptions.ratio.left;
+                        var rightRatio = blockOptions.ratio.right;
+                        var leftContent = '';
+                        var rightContent = '';
                         
-                        // Split content by the full separator
-                        var parts = content.split(separatorHTML);
-                        leftContent = parts[0].trim();
-                        rightContent = parts.length > 1 ? parts.slice(1).join(separatorHTML).trim() : '';
-                    } else {
-                        // Check for ;;;;;; separator
-                        var parts = content.split(';;;;;;');
-                        if (parts.length >= 2) {
+                        // Regex to find separator (inline or in <p>) and capture optional ratio
+                        var separatorRegex = /<p>\s*;;;\s*(?:([0-9]+:[0-9]+)\s*)?;;;\s*<\/p>|;;;(?:\s*([0-9]+:[0-9]+)\s*)?;;;\s*/;
+                        var separatorMatch = content.match(separatorRegex);
+                        
+                        if (separatorMatch) {
+                            // Found ;;;ratio;;; syntax
+                            var separatorHTML = separatorMatch[0];
+                            // The ratio can be in the first capture group (for <p>) or the second (for inline)
+                            var ratioStr = separatorMatch[1] || separatorMatch[2] || '1:1';
+                            
+                            var ratioParts = ratioStr.split(':');
+                            leftRatio = parseInt(ratioParts[0], 10) || 1;
+                            rightRatio = parseInt(ratioParts[1], 10) || 1;
+                            
+                            // Split content by the full separator
+                            var parts = content.split(separatorHTML);
                             leftContent = parts[0].trim();
-                            rightContent = parts.slice(1).join(';;;;;;').trim();
+                            rightContent = parts.length > 1 ? parts.slice(1).join(separatorHTML).trim() : '';
                         } else {
-                            // If no separator found, just put all content in left column
-                            leftContent = content.trim();
-                            rightContent = '';
+                            // Check for ;;;;;; separator
+                            var parts = content.split(';;;;;;');
+                            if (parts.length >= 2) {
+                                leftContent = parts[0].trim();
+                                rightContent = parts.slice(1).join(';;;;;;').trim();
+                            } else {
+                                // If no separator found, just put all content in left column
+                                leftContent = content.trim();
+                                rightContent = '';
+                            }
+                        }
+                        
+                        wrapper.innerHTML = `
+                            <div class="columns-container">
+                                <div class="column-left" style="flex: ${leftRatio};">${leftContent}</div>
+                                <div class="column-right" style="flex: ${rightRatio};">${rightContent}</div>
+                            </div>
+                        `;
+                    } else {
+                        // Original behavior for other block types
+                        for(var j = 0; j < capturedNodes.length; j++) {
+                            wrapper.appendChild(capturedNodes[j]);
                         }
                     }
                     
-                    wrapper.innerHTML = `
-                        <div class="columns-container">
-                            <div class="column-left" style="flex: ${leftRatio};">${leftContent}</div>
-                            <div class="column-right" style="flex: ${rightRatio};">${rightContent}</div>
-                        </div>
-                    `;
-                } else {
-                    // Original behavior for other block types
-                    for(var j = 0; j < capturedNodes.length; j++) {
-                        wrapper.appendChild(capturedNodes[j]);
+                    newNodes.push(wrapper);
+                    fenceStack.pop();
+                    
+                    // If fence stack is empty, stop capturing
+                    if (fenceStack.length === 0) {
+                        capturing = false;
+                        blockType = '';
+                        blockOptions = {};
+                        capturedNodes = [];
+                    } else {
+                        // Continue capturing for outer fence
+                        // Reset captured nodes with the newly created wrapper
+                        capturedNodes = [wrapper];
+                        // Update block type to outer fence type
+                        blockType = fenceStack[fenceStack.length - 1].blockType;
                     }
+                    continue;
                 }
-                
-                newNodes.push(wrapper);
             }
-            capturing = false;
-            capturedNodes = [];
-            blockType = '';
-            blockOptions = {};
-            continue;
         }
 
         if (capturing) {
@@ -145,7 +186,7 @@ function processFencedBlocks(nodes) {
         }
     }
 
-    // If a block was unclosed, append its nodes at the end to prevent content loss.
+    // If any blocks were unclosed, append their nodes at the end to prevent content loss.
     if (capturedNodes.length > 0) {
         newNodes.push.apply(newNodes, capturedNodes);
     }
