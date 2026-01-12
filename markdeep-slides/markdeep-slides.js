@@ -728,12 +728,12 @@ function injectNavBarStyles() {
         /* Logo styles */
         .slide-logo {
             position: absolute;
-            top: 15px;
-            right: 15px;
+            top: 1.2rem;
+            right: 0.1rem;
             z-index: 1000;
-            max-width: 100px;
-            max-height: 100px;
-            opacity: 0.8;
+            max-width: 4rem !important;
+            max-height: 4rem !important;
+            opacity: 1;
         }
         .toc-list li {
             margin-bottom: 0.5em;
