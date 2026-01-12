@@ -68,7 +68,7 @@ function processFencedBlocks(nodes) {
                 wrapper.className = blockType;
                 
                 if (blockType === 'two-column') {
-                    // Process two-column content with ;;;;;; separator
+                    // Process two-column content with ;;;ratio;;; or ;;;;;; separator
                     var content = '';
                     for(var j = 0; j < capturedNodes.length; j++) {
                         var childNode = capturedNodes[j];
@@ -79,34 +79,49 @@ function processFencedBlocks(nodes) {
                         }
                     }
                     
-                    // Split content by ;;;;;;
-                    var parts = content.split(';;;;;;');
-                    if (parts.length >= 2) {
-                        var leftContent = parts[0].trim();
-                        var rightContent = parts.slice(1).join(';;;;;;').trim();
+                    // Check for ;;;ratio;;; syntax first
+                    var leftRatio = blockOptions.ratio.left;
+                    var rightRatio = blockOptions.ratio.right;
+                    var leftContent = '';
+                    var rightContent = '';
+                    
+                    // Regex to find separator (inline or in <p>) and capture optional ratio
+                    var separatorRegex = /<p>\s*;;;\s*(?:([0-9]+:[0-9]+)\s*)?;;;\s*<\/p>|;;;(?:\s*([0-9]+:[0-9]+)\s*)?;;;\s*/;
+                    var separatorMatch = content.match(separatorRegex);
+                    
+                    if (separatorMatch) {
+                        // Found ;;;ratio;;; syntax
+                        var separatorHTML = separatorMatch[0];
+                        // The ratio can be in the first capture group (for <p>) or the second (for inline)
+                        var ratioStr = separatorMatch[1] || separatorMatch[2] || '1:1';
                         
-                        // Get ratio from blockOptions
-                        var leftRatio = blockOptions.ratio.left;
-                        var rightRatio = blockOptions.ratio.right;
+                        var ratioParts = ratioStr.split(':');
+                        leftRatio = parseInt(ratioParts[0], 10) || 1;
+                        rightRatio = parseInt(ratioParts[1], 10) || 1;
                         
-                        wrapper.innerHTML = `
-                            <div class="columns-container">
-                                <div class="column-left" style="flex: ${leftRatio};">${leftContent}</div>
-                                <div class="column-right" style="flex: ${rightRatio};">${rightContent}</div>
-                            </div>
-                        `;
+                        // Split content by the full separator
+                        var parts = content.split(separatorHTML);
+                        leftContent = parts[0].trim();
+                        rightContent = parts.length > 1 ? parts.slice(1).join(separatorHTML).trim() : '';
                     } else {
-                        // If no separator found, just put all content in left column
-                        var leftRatio = blockOptions.ratio.left;
-                        var rightRatio = blockOptions.ratio.right;
-                        
-                        wrapper.innerHTML = `
-                            <div class="columns-container">
-                                <div class="column-left" style="flex: ${leftRatio};">${content.trim()}</div>
-                                <div class="column-right" style="flex: ${rightRatio};"></div>
-                            </div>
-                        `;
+                        // Check for ;;;;;; separator
+                        var parts = content.split(';;;;;;');
+                        if (parts.length >= 2) {
+                            leftContent = parts[0].trim();
+                            rightContent = parts.slice(1).join(';;;;;;').trim();
+                        } else {
+                            // If no separator found, just put all content in left column
+                            leftContent = content.trim();
+                            rightContent = '';
+                        }
                     }
+                    
+                    wrapper.innerHTML = `
+                        <div class="columns-container">
+                            <div class="column-left" style="flex: ${leftRatio};">${leftContent}</div>
+                            <div class="column-right" style="flex: ${rightRatio};">${rightContent}</div>
+                        </div>
+                    `;
                 } else {
                     // Original behavior for other block types
                     for(var j = 0; j < capturedNodes.length; j++) {
