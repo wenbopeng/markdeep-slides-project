@@ -431,6 +431,19 @@ li > span.highlight-purple {
     transition: opacity 0.2s ease-in-out;
 }
 
+
+.presentation .fontsize-buttons {
+    position: absolute;
+    top: calc(var(--slide-letterbox-height) / 2 + 9em);
+    right: 15px;
+    z-index: 1000;
+    display: grid;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+
 .fontsize-buttons button {
     font-size: 0.5em;
     border: none;
@@ -442,4 +455,9 @@ li > span.highlight-purple {
 .md .admonition p{
     padding-top: 0%;
     line-height: 1em;
+}
+
+sup {
+    vertical-align:baseline;
+    font-size:1em;
 }

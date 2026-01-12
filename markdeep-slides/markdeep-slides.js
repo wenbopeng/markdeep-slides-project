@@ -773,13 +773,20 @@ function injectNavBarStyles() {
         /* Logo styles */
         .slide-logo {
             position: absolute;
-            top: 1.2rem;
+            margin-top: calc(var(--slide-height) / 10 - 1rem);
             right: 0.1rem;
             z-index: 1000;
             max-width: 4rem !important;
             max-height: 4rem !important;
             opacity: 1;
         }
+        .presentation.taller .slide-logo{
+            margin-top: calc(var(--slide-letterbox-height) / 2 + 1em);
+        }
+        .presentation.wider .slide-logo{
+            margin-top: left: calc(var(--slide-letterbox-width) / 2 + 1em);
+        }
+        
         .toc-list li {
             margin-bottom: 0.5em;
         }
@@ -1343,17 +1350,17 @@ function addFontSizeButtonsToSlides(slides) {
                 toggleButton.onclick = function() {
                     tocList.classList.toggle('single-column');
                     if (tocList.classList.contains('single-column')) {
-                        this.textContent = '▶️';
+                        this.textContent = '=';
                     } else {
-                        this.textContent = '🔽';
+                        this.textContent = '≡';
                     }
                 };
                 
                 // Copy styles from fontsize-buttons button
                 toggleButton.style.padding = '2px 8px';
-                toggleButton.style.fontSize = '14px';
-                toggleButton.style.backgroundColor = '#eee';
-                toggleButton.style.border = '1px solid #ccc';
+                toggleButton.style.fontSize = '0.5em';
+                toggleButton.style.backgroundColor = 'transparent';
+                toggleButton.style.border = 'none';
                 toggleButton.style.borderRadius = '4px';
                 toggleButton.style.cursor = 'pointer';
                 
