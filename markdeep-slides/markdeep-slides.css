@@ -283,7 +283,8 @@ html.presenter-notes {
 
 /* 分栏样式Two-column layout styles */
 .slide.two-column .columns-container,
-.two-column .columns-container {
+.two-column .columns-container,
+.two-column-appear .columns-container {
     display: flex;
     gap: 1rem; /* space between columns */
     align-items: flex-start; /* align content to the top */
@@ -293,7 +294,9 @@ html.presenter-notes {
 .slide.two-column .column-left,
 .slide.two-column .column-right,
 .two-column .column-left,
-.two-column .column-right {
+.two-column .column-right,
+.two-column-appear .column-left,
+.two-column-appear .column-right {
     flex: 1; /* each column takes up equal space */
     width: 50%; /* fallback for older browsers */
     min-width: 0; /* prevent overflow issues with flexbox */
@@ -308,12 +311,15 @@ html.presenter-notes {
 .slide.two-column .column-left,
 .slide.two-column .column-right,
 .two-column .column-left p,
-.two-column .column-right p{
+.two-column .column-right p,
+.two-column-appear .column-left p,
+.two-column-appear .column-right p{
     margin: 0.5rem;
 }
 
 .slide.two-column .column-left,
-.two-column .column-left {
+.two-column .column-left,
+.two-column-appear .column-left {
     background-color: #e6f2ff; /* 浅蓝色底纹 */
 }
 

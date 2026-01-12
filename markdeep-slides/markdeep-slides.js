@@ -65,8 +65,8 @@ function processFencedBlocks(nodes) {
             blockType = threeColonMatch[1];
             blockOptions = {};
             
-            // Check if ratio is provided for two-column block
-            if (blockType === 'two-column' && threeColonMatch[2]) {
+            // Check if ratio is provided for two-column or two-column-appear block
+            if ((blockType === 'two-column' || blockType === 'two-column-appear') && threeColonMatch[2]) {
                 var ratioParts = threeColonMatch[2].split(':');
                 blockOptions.ratio = {
                     left: parseInt(ratioParts[0], 10) || 1,
