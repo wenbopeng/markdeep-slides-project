@@ -2,7 +2,7 @@ document.write(`
 <!-- Markdeep slides stuff -->
 <script>
 markdeepSlidesOptions= {
-    aspectRatio: 16 / 9,
+    aspectRatio: 16 / 10,
     theme: "markdeep-slides/themes/simple.css",
     fontSize: 28,
     diagramZoom: 1.0,

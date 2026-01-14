@@ -1338,8 +1338,6 @@ function injectFontSizeButtonStyles() {
         }
         .fontsize-buttons {
             position: absolute;
-            top: 15px;
-            right: 15px;
             z-index: 1000;
             display: flex;
             gap: 8px;

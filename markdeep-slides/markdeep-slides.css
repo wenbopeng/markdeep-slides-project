@@ -442,15 +442,24 @@ li > span.highlight-purple {
     z-index: 1000;
     display: grid;
     gap: 8px;
-    opacity: 0;
+    opacity:0;
     transition: opacity 0.2s ease-in-out;
 }
 
 
-.presentation .fontsize-buttons {
+.presentation.taller .fontsize-buttons {
     position: absolute;
-    top: calc(var(--slide-letterbox-height) / 2 + 9em);
-    right: 15px;
+    top: calc((var(--slide-height) + var(--slide-letterbox-height)) / 2 - 1em);
+    z-index: 1000;
+    display: grid;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.presentation.wider .fontsize-buttons {
+    position: absolute;
+    left: calc(var(--slide-width) + var(--slide-letterbox-width) / 2 - 2em);
     z-index: 1000;
     display: grid;
     gap: 8px;
@@ -463,7 +472,7 @@ li > span.highlight-purple {
     font-size: 0.5em;
     border: none;
     cursor: pointer;
-    color: #bbb;
+    color:#bbb;
     background-color: transparent;
 }
 
