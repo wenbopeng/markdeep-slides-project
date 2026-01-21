@@ -1510,10 +1510,10 @@ function toggleOverview() {
         var currentSlideEl = document.getElementById("slide" + currentSlideNum);
         currentSlideEl.classList.add("active");
 
-        // Scroll to center the current slide in the viewport
+        // Scroll to center the current slide in the viewport (instant, no animation)
         setTimeout(function () {
-            currentSlideEl.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-        }, 50);
+            currentSlideEl.scrollIntoView({ behavior: "instant", block: "center", inline: "center" });
+        }, 10);
     }
 }
 
