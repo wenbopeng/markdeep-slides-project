@@ -1481,6 +1481,42 @@ function toggleBlack() {
     }
 }
 
+// toggles overview mode (grid view of all slides)
+function toggleOverview() {
+    var root = document.documentElement;
+
+    if (root.classList.contains("overview")) {
+        // Exit overview mode
+        root.classList.remove("overview");
+        showSlide(currentSlideNum);
+    } else {
+        // Enter overview mode
+        root.classList.add("overview");
+
+        // Add click handlers to slides
+        Array.from(document.getElementsByClassName("slide")).forEach(function (slide, index) {
+            slide.onclick = function (e) {
+                if (root.classList.contains("overview")) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    root.classList.remove("overview");
+                    gotoSlide(index);
+                }
+            };
+        });
+
+        // Highlight current slide
+        Array.from(document.getElementsByClassName("slide")).forEach(e => e.classList.remove("active"));
+        var currentSlideEl = document.getElementById("slide" + currentSlideNum);
+        currentSlideEl.classList.add("active");
+
+        // Scroll to center the current slide in the viewport
+        setTimeout(function () {
+            currentSlideEl.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+        }, 50);
+    }
+}
+
 // open or close presenter notes window
 function togglePresenterNotes() {
     if (presenterNotesWindow && !presenterNotesWindow.closed) {
@@ -1618,6 +1654,9 @@ function keyPress(event) {
             return false;
         case 84:  // t
             resetPresenterNotesTimer();
+            return false;
+        case 79:  // o
+            toggleOverview();
             return false;
         case 48:  // 0
         case 49:  // 1
