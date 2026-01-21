@@ -1,7 +1,3 @@
-// 增加了底部显示幻灯片章节标题的功能
-// 帮我修改这个markdeep的代码， 我希望在每一个二级标题页的左下方有一个容器, 可以展示其所属的一级标题（章节标题）的文字内容, 也就是说, 在该内容在幻灯片内部的左下方设置一个展示区域，展示所属章节. 用简体中文告诉我该怎么修改
-// 有一个问题, 就是二级标题页(a)，由于靠近后面的一级标题页(B)，会展示(B)的内容, 而不是展示前面的，a自己所属的一级标题(A)
-//太棒啦。 完全符合我的要求。 但为什么要播放的时候才能正常显示呢？如果幻灯片是在非播放状态， 这些章节标题会挤在一起， 并没有出现在正确位置
 var currentSlideNum = 0;
 var slideCount = 0;
 
@@ -14,8 +10,8 @@ var presenterNotesWindow;
 // "window." makes this variable available to the presenter notes window
 window.presenterNotesTimerStart = null;
 
-var slideChangeHook = (oldSlide, newSlide) => {};
-var modeChangeHook = (newMode) => {};
+var slideChangeHook = (oldSlide, newSlide) => { };
+var modeChangeHook = (newMode) => { };
 
 // state for incremental builds
 var buildItems = [];
@@ -26,187 +22,193 @@ var options;
 
 function processFencedBlocks(nodes) {
     var newNodes = [];
-    var capturing = false;
-    var capturedNodes = [];
-    var blockType = '';
-    var blockOptions = {};
-    // Track nested fence levels for proper processing
+    // Stack to track nested fences, each entry has: { colonCount, blockType, blockOptions, capturedNodes }
     var fenceStack = [];
 
-    // Define regex patterns
-    // Four-colon patterns for appear blocks (highest priority)
-    var startFourColonRegex = /^::::(appear\d*)\s*$/;
-    var endFourColonRegex = /^::::\s*$/;
-    // Three-colon patterns for all block types (including appear, for backward compatibility)
-    var startThreeColonRegex = /^:::(incremental|incremental-flat|appear\d*|big|small|tiny|two-column|two-column-appear)(?:\s+([0-9]+:[0-9]+))?\s*$/;
-    var endThreeColonRegex = /^:::\s*$/;
+    // Dynamic regex pattern that matches 3 or more colons followed by a block type
+    // Captures: (1) colons, (2) block type, (3) optional ratio
+    var startFenceRegex = /^(:{3,})(incremental|incremental-flat|appear\d*|big|small|tiny|two-column|two-column-appear)(?:\s+([0-9]+:[0-9]+))?\s*$/;
+    // Dynamic regex for end fence - captures just the colons
+    var endFenceRegex = /^(:{3,})\s*$/;
 
+    // Pre-process nodes: split text nodes that contain multiple fence markers on different lines
+    var preprocessedNodes = [];
     for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
+        var text = node.textContent ? node.textContent : '';
+
+        // Check if this node contains multiple lines with fence patterns
+        if (text.indexOf('\n') !== -1) {
+            var lines = text.split('\n');
+            var hasFenceMarker = false;
+
+            for (var j = 0; j < lines.length; j++) {
+                var line = lines[j].trim();
+                if (line.match(startFenceRegex) || line.match(endFenceRegex)) {
+                    hasFenceMarker = true;
+                    break;
+                }
+            }
+
+            // If there are fence markers within multi-line content, split into separate text nodes
+            if (hasFenceMarker) {
+                for (var j = 0; j < lines.length; j++) {
+                    var line = lines[j];
+                    if (line.trim()) {  // Only add non-empty lines
+                        var textNode = document.createTextNode(line);
+                        preprocessedNodes.push(textNode);
+                    }
+                }
+                continue;
+            }
+        }
+        preprocessedNodes.push(node);
+    }
+
+    for (var i = 0; i < preprocessedNodes.length; i++) {
+        var node = preprocessedNodes[i];
         // Ensure node has textContent property before trimming
         var text = node.textContent ? node.textContent.trim() : '';
-        
-        // Check for fence start patterns
-        var fourColonMatch = text.match(startFourColonRegex);
-        var threeColonMatch = text.match(startThreeColonRegex);
-        
-        if (fourColonMatch) {
-            // Four-colon appear block start
-            fenceStack.push({ type: 'four-colon', blockType: fourColonMatch[1] });
-            capturing = true;
-            blockType = fourColonMatch[1];
-            blockOptions = { ratio: { left: 1, right: 1 } };
-            capturedNodes = [];
-            continue;
-        } else if (threeColonMatch) {
-            // Three-colon block start
-            fenceStack.push({ type: 'three-colon', blockType: threeColonMatch[1] });
-            capturing = true;
-            blockType = threeColonMatch[1];
-            blockOptions = {};
-            
-            // Check if ratio is provided for two-column or two-column-appear block
-            if ((blockType === 'two-column' || blockType === 'two-column-appear') && threeColonMatch[2]) {
-                var ratioParts = threeColonMatch[2].split(':');
+
+        // Check for fence start pattern
+        var startMatch = text.match(startFenceRegex);
+
+        if (startMatch) {
+            var colonCount = startMatch[1].length;
+            var blockType = startMatch[2];
+            var blockOptions = { ratio: { left: 1, right: 1 } };
+
+            if ((blockType === 'two-column' || blockType === 'two-column-appear') && startMatch[3]) {
+                var ratioParts = startMatch[3].split(':');
                 blockOptions.ratio = {
                     left: parseInt(ratioParts[0], 10) || 1,
                     right: parseInt(ratioParts[1], 10) || 1
                 };
-            } else {
-                // Default ratio
-                blockOptions.ratio = { left: 1, right: 1 };
             }
-            
-            capturedNodes = [];
+
+            fenceStack.push({
+                colonCount: colonCount,
+                blockType: blockType,
+                blockOptions: blockOptions,
+                capturedNodes: []
+            });
             continue;
         }
-        
-        // Check for fence end patterns
-        var isFourColonEnd = endFourColonRegex.test(text);
-        var isThreeColonEnd = endThreeColonRegex.test(text);
-        
-        if (isFourColonEnd || isThreeColonEnd) {
-            if (capturing && fenceStack.length > 0) {
-                var currentFence = fenceStack[fenceStack.length - 1];
-                
-                // Check if the end fence matches the current fence type
-                if ((isFourColonEnd && currentFence.type === 'four-colon') || 
-                    (isThreeColonEnd && currentFence.type === 'three-colon')) {
-                    
-                    var wrapper = document.createElement('div');
-                    wrapper.className = blockType;
-                    
-                    if (blockType === 'two-column' || blockType === 'two-column-appear') {
-                        // Process two-column content with ;;;ratio;;; or ;;;;;; separator
-                        var content = '';
-                        for(var j = 0; j < capturedNodes.length; j++) {
-                            var childNode = capturedNodes[j];
-                            if (childNode.nodeType === 3) {
-                                content += childNode.textContent;
-                            } else {
-                                content += childNode.outerHTML || childNode.textContent;
-                            }
+
+        // Check for fence end pattern
+        var endMatch = text.match(endFenceRegex);
+
+        if (endMatch && fenceStack.length > 0) {
+            var endColonCount = endMatch[1].length;
+            var currentFence = fenceStack[fenceStack.length - 1];
+
+            // Check if the end fence colon count matches the current fence's colon count
+            if (endColonCount === currentFence.colonCount) {
+
+                // Pop this fence from the stack
+                fenceStack.pop();
+
+                // Create wrapper element for this block
+                var wrapper = document.createElement('div');
+                wrapper.className = currentFence.blockType;
+
+                if (currentFence.blockType === 'two-column' || currentFence.blockType === 'two-column-appear') {
+                    // For two-column blocks, we need to process nested fences first
+                    // Recursively process captured nodes to handle any nested fences
+                    var processedInnerNodes = processFencedBlocks(currentFence.capturedNodes);
+
+                    // Convert processed nodes to HTML string for separator splitting
+                    var content = '';
+                    for (var j = 0; j < processedInnerNodes.length; j++) {
+                        var childNode = processedInnerNodes[j];
+                        if (childNode.nodeType === 3) {
+                            content += childNode.textContent;
+                        } else {
+                            content += childNode.outerHTML || childNode.textContent;
                         }
-                        
-                        // Check for ;;;ratio;;; syntax first
-                        var leftRatio = blockOptions.ratio.left;
-                        var rightRatio = blockOptions.ratio.right;
-                        var leftContent = '';
-                        var rightContent = '';
-                        
-                        // Regex to find separator (inline or in <p>) and capture optional ratio
-                        var separatorRegex = /<p>\s*;;;\s*(?:([0-9]+:[0-9]+)\s*)?;;;\s*<\/p>|;;;(?:\s*([0-9]+:[0-9]+)\s*)?;;;\s*/;
-                        var separatorMatch = content.match(separatorRegex);
-                        
-                        if (separatorMatch) {
-                            // Found ;;;ratio;;; syntax
-                            var separatorHTML = separatorMatch[0];
-                            // The ratio can be in the first capture group (for <p>) or the second (for inline)
-                            var ratioStr = separatorMatch[1] || separatorMatch[2] || '1:1';
-                            
-                            var ratioParts = ratioStr.split(':');
-                            leftRatio = parseInt(ratioParts[0], 10) || 1;
-                            rightRatio = parseInt(ratioParts[1], 10) || 1;
-                            
-                            // Split content by the full separator
-                            var parts = content.split(separatorHTML);
+                    }
+
+                    var leftRatio = currentFence.blockOptions.ratio.left;
+                    var rightRatio = currentFence.blockOptions.ratio.right;
+                    var leftContent = '';
+                    var rightContent = '';
+
+                    // Regex to find separator (inline or in <p>) and capture optional ratio
+                    var separatorRegex = /<p>\s*;;;\s*(?:([0-9]+:[0-9]+)\s*)?;;;\s*<\/p>|;;;(?:\s*([0-9]+:[0-9]+)\s*)?;;;\s*/;
+                    var separatorMatch = content.match(separatorRegex);
+
+                    if (separatorMatch) {
+                        var separatorHTML = separatorMatch[0];
+                        var ratioStr = separatorMatch[1] || separatorMatch[2] || '1:1';
+
+                        var ratioParts = ratioStr.split(':');
+                        leftRatio = parseInt(ratioParts[0], 10) || 1;
+                        rightRatio = parseInt(ratioParts[1], 10) || 1;
+
+                        var parts = content.split(separatorHTML);
+                        leftContent = parts[0].trim();
+                        rightContent = parts.length > 1 ? parts.slice(1).join(separatorHTML).trim() : '';
+                    } else {
+                        // Check for ;;;;;; separator
+                        var parts = content.split(';;;;;;');
+                        if (parts.length >= 2) {
                             leftContent = parts[0].trim();
-                            rightContent = parts.length > 1 ? parts.slice(1).join(separatorHTML).trim() : '';
+                            rightContent = parts.slice(1).join(';;;;;;').trim();
                         } else {
-                            // Check for ;;;;;; separator
-                            var parts = content.split(';;;;;;');
-                            if (parts.length >= 2) {
-                                leftContent = parts[0].trim();
-                                rightContent = parts.slice(1).join(';;;;;;').trim();
-                            } else {
-                                // If no separator found, just put all content in left column
-                                leftContent = content.trim();
-                                rightContent = '';
-                            }
-                        }
-                        
-                        var leftColumnClass = 'column-left';
-                        var rightColumnClass = 'column-right';
-                        
-                        // Create columns with proper appear classes if it's a two-column-appear block
-                        if (blockType === 'two-column-appear') {
-                            // Add appear1 and appear2 classes directly to columns
-                            // This ensures the entire column (including background) appears sequentially
-                            wrapper.innerHTML = `
-                                <div class="columns-container">
-                                    <div class="${leftColumnClass} appear1" style="flex: ${leftRatio};">${leftContent}</div>
-                                    <div class="${rightColumnClass} appear2" style="flex: ${rightRatio};">${rightContent}</div>
-                                </div>
-                            `;
-                        } else {
-                            // Normal two-column block without appear effect
-                            wrapper.innerHTML = `
-                                <div class="columns-container">
-                                    <div class="${leftColumnClass}" style="flex: ${leftRatio};">${leftContent}</div>
-                                    <div class="${rightColumnClass}" style="flex: ${rightRatio};">${rightContent}</div>
-                                </div>
-                            `;
-                        }
-                    } else {
-                        // Original behavior for other block types
-                        for(var j = 0; j < capturedNodes.length; j++) {
-                            wrapper.appendChild(capturedNodes[j]);
+                            leftContent = content.trim();
+                            rightContent = '';
                         }
                     }
-                    
-                    newNodes.push(wrapper);
-                    fenceStack.pop();
-                    
-                    // If fence stack is empty, stop capturing
-                    if (fenceStack.length === 0) {
-                        capturing = false;
-                        blockType = '';
-                        blockOptions = {};
-                        capturedNodes = [];
+
+                    var leftColumnClass = 'column-left';
+                    var rightColumnClass = 'column-right';
+
+                    if (currentFence.blockType === 'two-column-appear') {
+                        wrapper.innerHTML = `
+                            <div class="columns-container">
+                                <div class="${leftColumnClass} appear1" style="flex: ${leftRatio};">${leftContent}</div>
+                                <div class="${rightColumnClass} appear2" style="flex: ${rightRatio};">${rightContent}</div>
+                            </div>
+                        `;
                     } else {
-                        // Continue capturing for outer fence
-                        // Reset captured nodes with the newly created wrapper
-                        capturedNodes = [wrapper];
-                        // Update block type to outer fence type
-                        blockType = fenceStack[fenceStack.length - 1].blockType;
+                        wrapper.innerHTML = `
+                            <div class="columns-container">
+                                <div class="${leftColumnClass}" style="flex: ${leftRatio};">${leftContent}</div>
+                                <div class="${rightColumnClass}" style="flex: ${rightRatio};">${rightContent}</div>
+                            </div>
+                        `;
                     }
-                    continue;
+                } else {
+                    // For other block types, recursively process captured nodes first
+                    var processedInnerNodes = processFencedBlocks(currentFence.capturedNodes);
+                    for (var j = 0; j < processedInnerNodes.length; j++) {
+                        wrapper.appendChild(processedInnerNodes[j]);
+                    }
                 }
+
+                // Add wrapper to outer fence's captured nodes, or to newNodes if at top level
+                if (fenceStack.length > 0) {
+                    fenceStack[fenceStack.length - 1].capturedNodes.push(wrapper);
+                } else {
+                    newNodes.push(wrapper);
+                }
+                continue;
             }
         }
 
-        if (capturing) {
-            capturedNodes.push(node);
+        // Add node to current capturing context
+        if (fenceStack.length > 0) {
+            fenceStack[fenceStack.length - 1].capturedNodes.push(node);
         } else {
             newNodes.push(node);
         }
     }
 
     // If any blocks were unclosed, append their nodes at the end to prevent content loss.
-    if (capturedNodes.length > 0) {
-        newNodes.push.apply(newNodes, capturedNodes);
+    for (var k = 0; k < fenceStack.length; k++) {
+        newNodes.push.apply(newNodes, fenceStack[k].capturedNodes);
     }
-    
+
     return newNodes;
 }
 
@@ -260,11 +262,11 @@ function initSlides() {
     // break document into slides
     var md = document.querySelector("body > .md");
     var es = Array.from(md.childNodes);
-    
+
     // Extract logo paths from the document
     var logoPath = null;
     var logo1Path = null;
-    
+
     // Check for logo1: syntax in the document
     var documentText = md.textContent;
     var logo1Match = documentText.match(/logo1:\s*([^\s\n]+)/i);
@@ -273,7 +275,7 @@ function initSlides() {
         // Remove the logo1 line from the document to avoid it being displayed
         md.innerHTML = md.innerHTML.replace(/logo1:\s*([^\s\n]+)/i, '');
     }
-    
+
     // Check for logo: syntax in the document
     var logoMatch = md.textContent.match(/logo:\s*([^\s\n]+)/i);
     if (logoMatch) {
@@ -281,7 +283,7 @@ function initSlides() {
         // Remove the logo line from the document to avoid it being displayed
         md.innerHTML = md.innerHTML.replace(/logo:\s*([^\s\n]+)/i, '');
     }
-    
+
     // Re-extract child nodes after removing logo lines
     es = Array.from(md.childNodes);
 
@@ -300,7 +302,7 @@ function initSlides() {
     var currentSlide = [];
     var currentPresenterNotes = [];
     var currentH1Title = ""; // 记录当前一级标题
-    
+
     sections = []; // Reset sections array
     var nextSectionName = null;
 
@@ -321,28 +323,28 @@ function initSlides() {
             nextSectionName = null;
         }
 
-     // 仅在当前 slide 完成后更新 H1，防止影响前一张幻灯片
-    var nextH1Title = null;
+        // 仅在当前 slide 完成后更新 H1，防止影响前一张幻灯片
+        var nextH1Title = null;
 
-    if (e.tagName === "H1") {
-        nextH1Title = e.textContent.trim();
-    }
+        if (e.tagName === "H1") {
+            nextH1Title = e.textContent.trim();
+        }
         // create new slide when enountering <hr> or end of input
         if (isSlideBreak(e) || i == es.length - 1) {
             var slide = document.createElement('div');
             slide.className = "slide";
             slide.id = "slide" + slideCount;
-            
+
             // Determine which logo to use based on slide content
             var currentLogoPath = null;
-            
+
             // Check if this is the title slide (slideCount == 0)
             var isTitleSlide = (slideCount === 0);
-            
+
             // Check if the slide starts with an H1 or H2 tag
             var hasH1 = false;
             var hasH2 = false;
-            
+
             // Check the currentSlide array for H1 or H2 tags
             for (var k = 0; k < currentSlide.length; k++) {
                 var node = currentSlide[k];
@@ -354,7 +356,7 @@ function initSlides() {
                     break;
                 }
             }
-            
+
             // Choose logo based on slide type
             if ((isTitleSlide || hasH1)) {
                 // For title slide and H1 slides, only use logo1 if it exists
@@ -366,7 +368,7 @@ function initSlides() {
                 // For other slides (including those starting with H2), use logo if it exists
                 currentLogoPath = logoPath;
             }
-            
+
             // Add the appropriate logo to the slide
             if (currentLogoPath) {
                 var logoImg = document.createElement('img');
@@ -421,7 +423,7 @@ function initSlides() {
                 '%': 'green',
                 '@': 'purple'
             };
-            sc.querySelectorAll('li').forEach(function(li) {
+            sc.querySelectorAll('li').forEach(function (li) {
                 // Find the first child node that is a text node and not just whitespace
                 var firstTextNode = null;
                 for (var k = 0; k < li.childNodes.length; k++) {
@@ -465,10 +467,10 @@ function initSlides() {
                             if (isBlock) {
                                 break;
                             }
-                            
+
                             // Move the inline node into the span.
                             span.appendChild(currentNode);
-                            
+
                             currentNode = nextNode;
                         }
                     }
@@ -478,9 +480,9 @@ function initSlides() {
             // Check for small-text marker
             if (sc.innerHTML.includes('[small-text]')) {
                 slide.classList.add('small-text');
-                            // Handle marker in its own paragraph or inline
-                            sc.innerHTML = sc.innerHTML.replace(/<p>\s*\[small-text\]\s*<\/p>/g, '').replace(/\[small-text\]/g, '');
-                        }
+                // Handle marker in its own paragraph or inline
+                sc.innerHTML = sc.innerHTML.replace(/<p>\s*\[small-text\]\s*<\/p>/g, '').replace(/\[small-text\]/g, '');
+            }
 
             // Check for tiny-text marker
             if (sc.innerHTML.includes('[tiny-text]')) {
@@ -507,59 +509,59 @@ function initSlides() {
                     sc.classList.add('incremental-flat');
                 }
             }
-                
-                                                // Check for two-column marker ;;;
-                                                if (sc.innerHTML.includes(';;;')) {
-                                                    slide.classList.add('two-column');
-                                    
-                                                    // Find and separate the title (first H1-H6) from the content
-                                                    const content = sc.innerHTML;
-                                                    const titleRegex = /^\s*(<h[1-6][^>]*>.*?<\/h[1-6]>)/i;
-                                                    const titleMatch = content.match(titleRegex);
-                                                    const titleHTML = titleMatch ? titleMatch[1] : '';
-                                                    const contentToSplit = titleMatch ? content.substring(titleMatch[0].length) : content;
-                                                    
-                                                    // Regex to find separator (inline or in <p>) and capture optional ratio
-                                                    const separatorRegex = /<p>\s*;;;\s*(?:([0-9]+:[0-9]+)\s*)?;;;\s*<\/p>|;;;(?:\s*([0-9]+:[0-9]+)\s*)?;;;\s*/;
-                                                    const separatorMatch = contentToSplit.match(separatorRegex);
-                                    
-                                                    let leftContent = contentToSplit; // Default: all content in left column if separator logic fails
-                                                    let rightContent = '';
-                                                    let leftRatio = 1;
-                                                    let rightRatio = 1;
-                                    
-                                                    if (separatorMatch) {
-                                                        const separatorHTML = separatorMatch[0];
-                                                        // The ratio can be in the first capture group (for <p>) or the second (for inline)
-                                                        const ratioStr = separatorMatch[1] || separatorMatch[2] || '1:1';
-                                                        
-                                                        const ratioParts = ratioStr.split(':');
-                                                        leftRatio = parseInt(ratioParts[0], 10) || 1;
-                                                        rightRatio = parseInt(ratioParts[1], 10) || 1;
-                                                        
-                                                        // Split content by the full separator
-                                                        const parts = contentToSplit.split(separatorHTML);
-                                                        leftContent = parts[0] || '';
-                                                        rightContent = parts.length > 1 ? parts[1] : '';
-                                                    }
-                                    
-                                                    // Reconstruct the slide content with columns, applying ratios via inline style
-                                                    sc.innerHTML = `
+
+            // Check for two-column marker ;;;
+            if (sc.innerHTML.includes(';;;')) {
+                slide.classList.add('two-column');
+
+                // Find and separate the title (first H1-H6) from the content
+                const content = sc.innerHTML;
+                const titleRegex = /^\s*(<h[1-6][^>]*>.*?<\/h[1-6]>)/i;
+                const titleMatch = content.match(titleRegex);
+                const titleHTML = titleMatch ? titleMatch[1] : '';
+                const contentToSplit = titleMatch ? content.substring(titleMatch[0].length) : content;
+
+                // Regex to find separator (inline or in <p>) and capture optional ratio
+                const separatorRegex = /<p>\s*;;;\s*(?:([0-9]+:[0-9]+)\s*)?;;;\s*<\/p>|;;;(?:\s*([0-9]+:[0-9]+)\s*)?;;;\s*/;
+                const separatorMatch = contentToSplit.match(separatorRegex);
+
+                let leftContent = contentToSplit; // Default: all content in left column if separator logic fails
+                let rightContent = '';
+                let leftRatio = 1;
+                let rightRatio = 1;
+
+                if (separatorMatch) {
+                    const separatorHTML = separatorMatch[0];
+                    // The ratio can be in the first capture group (for <p>) or the second (for inline)
+                    const ratioStr = separatorMatch[1] || separatorMatch[2] || '1:1';
+
+                    const ratioParts = ratioStr.split(':');
+                    leftRatio = parseInt(ratioParts[0], 10) || 1;
+                    rightRatio = parseInt(ratioParts[1], 10) || 1;
+
+                    // Split content by the full separator
+                    const parts = contentToSplit.split(separatorHTML);
+                    leftContent = parts[0] || '';
+                    rightContent = parts.length > 1 ? parts[1] : '';
+                }
+
+                // Reconstruct the slide content with columns, applying ratios via inline style
+                sc.innerHTML = `
                                                         ${titleHTML}
                                                         <div class="columns-container">
                                                             <div class="column-left" style="flex: ${leftRatio};">${leftContent}</div>
                                                             <div class="column-right" style="flex: ${rightRatio};">${rightContent}</div>
                                                         </div>
                                                     `;
-                                                }
-                                                slide.appendChild(sc);
-                                                // 如果该幻灯片以 <h2> 开头，则在左下方显示所属的 H1 标题
-                                                if (currentSlide.length > 0 && currentSlide[0].tagName === "H2" && currentH1Title) {
-                                                    var chapterLabel = document.createElement('div');
-                                                    chapterLabel.className = "chapter-label";
-                                                    chapterLabel.textContent = currentH1Title;
-                                                    slide.appendChild(chapterLabel);
-                                                }            // presenter notes (if any)
+            }
+            slide.appendChild(sc);
+            // 如果该幻灯片以 <h2> 开头，则在左下方显示所属的 H1 标题
+            if (currentSlide.length > 0 && currentSlide[0].tagName === "H2" && currentH1Title) {
+                var chapterLabel = document.createElement('div');
+                chapterLabel.className = "chapter-label";
+                chapterLabel.textContent = currentH1Title;
+                slide.appendChild(chapterLabel);
+            }            // presenter notes (if any)
             if (currentPresenterNotes.length > 0) {
                 var spn = document.createElement('div');
                 spn.className = "slide-presenter-notes";
@@ -607,7 +609,7 @@ function initSlides() {
                 break;
             }
         }
-        
+
         if (firstMeaningfulElement && firstMeaningfulElement.tagName === 'H1') {
             slide.classList.add('h1-title-slide');
         }
@@ -698,12 +700,12 @@ function initSlides() {
 
             // Add click handlers AFTER cloning
             // First child is TOC button
-            navBar.children[0].onclick = function() { gotoSlide(1); return false; };
+            navBar.children[0].onclick = function () { gotoSlide(1); return false; };
             // Other children are section links
             for (let j = 0; j < sections.length; j++) {
                 let navItem = navBar.children[j + 1];
                 let section = sections[j];
-                navItem.onclick = function() { gotoSlide(section.startSlide); return false; };
+                navItem.onclick = function () { gotoSlide(section.startSlide); return false; };
             }
 
             slide.prepend(navBar);
@@ -725,7 +727,7 @@ function initSlides() {
 
     // fill in the current date for any elements with the .current-date class
     document.querySelectorAll(".current-date").forEach(e => {
-        e.innerText = new Date().toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'});
+        e.innerText = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     });
 
     // further initialization steps
@@ -739,9 +741,9 @@ function initSlides() {
         // This regex is designed to match only the first line if it's an admonition marker line.
         var admonitionLineRegex = /(^\s*\[!(\w+)\]\s*(.*)?)(\r\n|\r|\n|$)/;
 
-        document.querySelectorAll('.slide-content blockquote').forEach(function(bq) {
+        document.querySelectorAll('.slide-content blockquote').forEach(function (bq) {
             var markerNode = null;
-            
+
             // Find the first child NODE that looks like it contains the marker at the start.
             for (var i = 0; i < bq.childNodes.length; i++) {
                 var node = bq.childNodes[i];
@@ -773,7 +775,7 @@ function initSlides() {
 
             // Remove only the matched line from the beginning of the text node's content
             markerNode.textContent = markerNode.textContent.substring(fullMatchedLine.length);
-            
+
             // If the markerNode is now empty (e.g., it only contained the marker), remove it completely.
             if (markerNode.textContent.trim() === '') {
                 markerNode.remove();
@@ -905,7 +907,7 @@ function createTocSlide(totalSlideCount) {
 
     var sc = document.createElement('div');
     sc.className = "slide-content";
-    
+
     var title = document.createElement('div'); // Changed from h1 to div
     title.className = "toc-title"; // Added class for styling
     title.textContent = "目录";
@@ -922,8 +924,8 @@ function createTocSlide(totalSlideCount) {
         link.textContent = section.name;
         link.href = "#";
         // Use a closure to capture the correct, final startSlide value
-        (function(s) {
-            link.onclick = function() { gotoSlide(s.startSlide); return false; };
+        (function (s) {
+            link.onclick = function () { gotoSlide(s.startSlide); return false; };
         })(section);
         item.appendChild(link);
         list.appendChild(item);
@@ -963,8 +965,8 @@ function processMarkdeepSlidesOptions() {
         breakOnHeadings: false,
         incremental: false,
         incrementalFlat: false, // Use camelCase for consistency
-        slideChangeHook: (oldSlide, newSlide) => {},
-        modeChangeHook: (newMode) => {}
+        slideChangeHook: (oldSlide, newSlide) => { },
+        modeChangeHook: (newMode) => { }
     };
 
     if (typeof markdeepSlidesOptions !== 'undefined') {
@@ -1042,7 +1044,7 @@ function relativizeDiagrams(diagramZoom) {
     // this factor works well as a baseline
     var zoom = 0.9 * diagramZoom;
 
-    document.querySelectorAll("svg.diagram").forEach(function(diag) {
+    document.querySelectorAll("svg.diagram").forEach(function (diag) {
         function toRem(px) {
             return (parseFloat(px) / baseRem) + "rem";
         }
@@ -1053,7 +1055,7 @@ function relativizeDiagrams(diagramZoom) {
         diag.removeAttribute("width");
         diag.removeAttribute("height");
         diag.setAttribute("viewBox", "0 0 " + w + " " + h);
-        diag.style.width  = toRem(w * zoom);
+        diag.style.width = toRem(w * zoom);
         diag.style.height = toRem(h * zoom);
 
         if (diag.style.marginTop) {
@@ -1116,7 +1118,7 @@ function updateOnScroll() {
     for (var i = 0; i < slides.length; i++) {
         var slide = slides[i];
         var bcr = slide.getBoundingClientRect();
-        
+
         var visibleTop = Math.max(0, bcr.top);
         var visibleBottom = Math.min(viewportHeight, bcr.bottom);
         var visibleHeight = Math.max(0, visibleBottom - visibleTop);
@@ -1164,7 +1166,7 @@ function showSlide(slideNum) {
     history.replaceState({}, '', '#' + "slide" + slideNum);
     options.slideChangeHook(currentSlideNum, slideNum);
     currentSlideNum = slideNum;
-    
+
     // Discover and reset build items for the new slide
     var currentSlideEl = document.getElementById("slide" + currentSlideNum);
     buildItems = []; // Reset builds
@@ -1174,7 +1176,7 @@ function showSlide(slideNum) {
         if (slideContent && slideContent.classList.contains('build')) {
             // New [build] mode logic
             var topLevelElements = Array.from(slideContent.children);
-            topLevelElements.forEach(function(el) {
+            topLevelElements.forEach(function (el) {
                 // Do not make the nav bar a build step
                 if (el.classList.contains('top-nav-bar')) return;
 
@@ -1192,12 +1194,12 @@ function showSlide(slideNum) {
             // Logic for manual builds (:::appear, :::incremental), now with ordering
             var defaultBuilds = [];
             var numberedBuilds = []; // Array of { item: el, order: num }
-    
+
             // 1. Gather incremental list items as default builds
             var incrementalBlock = currentSlideEl.querySelector(".incremental");
             var incrementalFlatBlock = currentSlideEl.querySelector(".incremental-flat");
-            var isNotInAppearBlock = function(element) { return !element.closest('[class^="appear"]'); };
-    
+            var isNotInAppearBlock = function (element) { return !element.closest('[class^="appear"]'); };
+
             if (incrementalBlock) {
                 var listItems = Array.from(incrementalBlock.querySelectorAll("li"));
                 defaultBuilds = defaultBuilds.concat(listItems.filter(isNotInAppearBlock));
@@ -1205,13 +1207,13 @@ function showSlide(slideNum) {
                 var listItems = Array.from(incrementalFlatBlock.querySelectorAll(":scope > ul > li, :scope > ol > li"));
                 defaultBuilds = defaultBuilds.concat(listItems.filter(isNotInAppearBlock));
             }
-            
+
             // 2. Gather all 'appear' blocks and sort them into default or numbered
             // Use [class*="appear"] to match elements that contain 'appear' in their class list
             var appearBlocks = currentSlideEl.querySelectorAll('[class*="appear"]');
             var orderRegex = /appear(\d+)/;
-    
-            appearBlocks.forEach(function(block) {
+
+            appearBlocks.forEach(function (block) {
                 var match = block.className.match(orderRegex);
                 if (match) {
                     var order = parseInt(match[1], 10);
@@ -1220,19 +1222,19 @@ function showSlide(slideNum) {
                     defaultBuilds.push(block);
                 }
             });
-    
+
             // 3. Sort numbered builds
-            numberedBuilds.sort(function(a, b) { return a.order - b.order; });
-    
+            numberedBuilds.sort(function (a, b) { return a.order - b.order; });
+
             // 4. Concatenate everything: default builds first, then sorted numbered builds
-            buildItems = defaultBuilds.concat(numberedBuilds.map(function(b) { return b.item; }));
+            buildItems = defaultBuilds.concat(numberedBuilds.map(function (b) { return b.item; }));
         }
 
         // Reset visibility on all collected build items
         if (buildItems.length > 0) {
-          buildItems.forEach(function(item) {
-              item.classList.remove('visible');
-          });
+            buildItems.forEach(function (item) {
+                item.classList.remove('visible');
+            });
         }
     }
     currentBuildStep = 0;
@@ -1295,7 +1297,7 @@ function gotoSlide(slideNum) {
 // invariably break in the future. web development is great!
 function isFullscreen() {
     return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement ||
-              window.fullScreen /*||
+        window.fullScreen /*||
               (window.innerHeight == screen.height && window.innerWidth == screen.width)*/);
 }
 
@@ -1369,7 +1371,7 @@ function addFontSizeButtonsToSlides(slides) {
     var smallButton = document.createElement('button');
     smallButton.textContent = '○';
     smallButton.title = '缩小字体';
-    var smallButtonOnClick = function() {
+    var smallButtonOnClick = function () {
         var slide = this.closest('.slide');
         if (slide) {
             slide.classList.remove('tiny-text');
@@ -1380,18 +1382,18 @@ function addFontSizeButtonsToSlides(slides) {
     var tinyButton = document.createElement('button');
     tinyButton.textContent = '-';
     tinyButton.title = '进一步缩小字体';
-    var tinyButtonOnClick = function() {
+    var tinyButtonOnClick = function () {
         var slide = this.closest('.slide');
         if (slide) {
             slide.classList.remove('small-text');
             slide.classList.add('tiny-text');
         }
     };
-    
+
     var resetButton = document.createElement('button');
     resetButton.textContent = '+';
     resetButton.title = '恢复正常字体';
-    var resetButtonOnClick = function() {
+    var resetButtonOnClick = function () {
         var slide = this.closest('.slide');
         if (slide) {
             slide.classList.remove('small-text');
@@ -1410,7 +1412,7 @@ function addFontSizeButtonsToSlides(slides) {
         buttons.children[0].onclick = resetButtonOnClick;
         buttons.children[1].onclick = smallButtonOnClick;
         buttons.children[2].onclick = tinyButtonOnClick;
-        
+
         // Check if this is the toc slide (slide1) and add the toggle button
         if (slide.id === 'slide1') {
             var tocList = slide.querySelector('.toc-list');
@@ -1418,7 +1420,7 @@ function addFontSizeButtonsToSlides(slides) {
                 var toggleButton = document.createElement('button');
                 toggleButton.textContent = '=';
                 toggleButton.title = '切换目录显示模式';
-                toggleButton.onclick = function() {
+                toggleButton.onclick = function () {
                     tocList.classList.toggle('single-column');
                     if (tocList.classList.contains('single-column')) {
                         this.textContent = '=';
@@ -1426,7 +1428,7 @@ function addFontSizeButtonsToSlides(slides) {
                         this.textContent = '≡';
                     }
                 };
-                
+
                 // Copy styles from fontsize-buttons button
                 toggleButton.style.padding = '2px 8px';
                 toggleButton.style.fontSize = '0.5em';
@@ -1434,11 +1436,11 @@ function addFontSizeButtonsToSlides(slides) {
                 toggleButton.style.border = 'none';
                 toggleButton.style.borderRadius = '4px';
                 toggleButton.style.cursor = 'pointer';
-                
+
                 buttons.appendChild(toggleButton);
             }
         }
-        
+
         slide.appendChild(buttons);
     }
 }
@@ -1447,7 +1449,7 @@ function fullscreenActions() {
     enableScroll = false;
 
     var fullscreen = isFullscreen();
-    options.modeChangeHook(fullscreen? "presentation" : "draft");
+    options.modeChangeHook(fullscreen ? "presentation" : "draft");
 
     var root = document.documentElement;
     if (fullscreen) {
@@ -1592,67 +1594,67 @@ function keyPress(event) {
     }
 
     switch (event.keyCode) {
-      case 39:  // left
-      case 40:  // down
-      case 32:  // space
-      case 34:  // pgdn
-        nextSlide();
-        return false;
-      case 37:  // right
-      case 38:  // up
-      case 33:  // pgup
-        prevSlide();
-        return false;
-      case 27:  // escape
-      case 116: // f5
-      case 70:  // f
-        toggleFullscreen();
-        return false;
-      case 190: // .
-        toggleBlack();
-        return false;
-      case 78:  // n
-        togglePresenterNotes();
-        return false;
-      case 84:  // t
-        resetPresenterNotesTimer();
-        return false;
-      case 48:  // 0
-      case 49:  // 1
-      case 50:  // 2
-      case 51:  // 3
-      case 52:  // 4
-      case 53:  // 5
-      case 54:  // 6
-      case 55:  // 7
-      case 56:  // 8
-      case 57:  // 9
-        gotoSlideNum.push(event.keyCode - 48);
-        return false;
-      case 8:  // backspace
-        gotoSlideNum.pop();
-        return false;
-      case 13:  // enter
-        if (gotoSlideNum.length == 0) {
+        case 39:  // left
+        case 40:  // down
+        case 32:  // space
+        case 34:  // pgdn
+            nextSlide();
             return false;
-        }
+        case 37:  // right
+        case 38:  // up
+        case 33:  // pgup
+            prevSlide();
+            return false;
+        case 27:  // escape
+        case 116: // f5
+        case 70:  // f
+            toggleFullscreen();
+            return false;
+        case 190: // .
+            toggleBlack();
+            return false;
+        case 78:  // n
+            togglePresenterNotes();
+            return false;
+        case 84:  // t
+            resetPresenterNotesTimer();
+            return false;
+        case 48:  // 0
+        case 49:  // 1
+        case 50:  // 2
+        case 51:  // 3
+        case 52:  // 4
+        case 53:  // 5
+        case 54:  // 6
+        case 55:  // 7
+        case 56:  // 8
+        case 57:  // 9
+            gotoSlideNum.push(event.keyCode - 48);
+            return false;
+        case 8:  // backspace
+            gotoSlideNum.pop();
+            return false;
+        case 13:  // enter
+            if (gotoSlideNum.length == 0) {
+                return false;
+            }
 
-        // convert list of digits "gotoSlideNum" into number "slide"
-        var slide = 0;
-        var i = 0;
-        for (let n of gotoSlideNum.reverse()) {
-            slide += n * (10 ** i++);
-        }
-        gotoSlideNum = [];
+            // convert list of digits "gotoSlideNum" into number "slide"
+            var slide = 0;
+            var i = 0;
+            for (let n of gotoSlideNum.reverse()) {
+                slide += n * (10 ** i++);
+            }
+            gotoSlideNum = [];
 
-        gotoSlide(slide);
-        return false;
-      default:
-        return;
+            gotoSlide(slide);
+            return false;
+        default:
+            return;
     }
 };
 // Wait for DOM to be fully loaded before setting event listeners
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     document.body.onkeydown = keyPress;
 });
 
@@ -1681,7 +1683,7 @@ setInterval(setCssViewport, 200);
 
 // make cursor disappear after two seconds in presentation mode
 var cursorTimeout;
-document.body.onmousemove = function() {
+document.body.onmousemove = function () {
     if (document.body.style.cursor != "none") {
         if (cursorTimeout) {
             clearTimeout(cursorTimeout);
@@ -1690,7 +1692,7 @@ document.body.onmousemove = function() {
         document.body.style.cursor = "auto";
     }
 
-    cursorTimeout = setTimeout(function() {
+    cursorTimeout = setTimeout(function () {
         if (document.documentElement.classList.contains("draft")) {
             return;
         }
