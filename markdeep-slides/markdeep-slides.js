@@ -912,7 +912,7 @@ function createTocSlide(totalSlideCount) {
     sc.appendChild(title);
 
     var list = document.createElement('ul');
-    list.className = "toc-list"; // Use class for styling
+    list.className = "toc-list single-column"; // Use class for styling, default to single column
     // Store reference to the list for later use by the toggle button
     list.dataset.tocList = true;
 
