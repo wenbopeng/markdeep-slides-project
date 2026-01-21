@@ -1,9 +1,12 @@
 @import url('reset.css');
 
 :root {
-    --font-size: 28;         /* unit-less – just tweak it to your liking */
-    --side-margin: 2rem;     /* left and right margin of each slide */
-    --aspect-ratio: 16 / 9;  /* is usually overridden via js */
+    --font-size: 28;
+    /* unit-less – just tweak it to your liking */
+    --side-margin: 2rem;
+    /* left and right margin of each slide */
+    --aspect-ratio: 16 / 9;
+    /* is usually overridden via js */
 
     --slide-number-color: #bbb;
     --slide-number-font: inherit;
@@ -11,12 +14,15 @@
     --total-slide-number-display: none;
     --slide-progress-display: block;
 
-    --vw: 1vw;  /* these two are set to the viewport size, EXCLUDING the... */
-    --vh: 1vh;  /* ...scroll bars, via js in order to fix #23 */
+    --vw: 1vw;
+    /* these two are set to the viewport size, EXCLUDING the... */
+    --vh: 1vh;
+    /* ...scroll bars, via js in order to fix #23 */
 }
 
 @page {
-    size: 640px 360px;  /* for a 16:9 aspect ratio; may be overridden via js */
+    size: 640px 360px;
+    /* for a 16:9 aspect ratio; may be overridden via js */
     margin: 0;
 }
 
@@ -28,6 +34,7 @@ html.draft,
 html.presentation.taller {
     font-size: calc(var(--font-size) * (0.1 * var(--vw)));
 }
+
 html.presentation.wider {
     font-size: calc(var(--font-size) * (0.1 * var(--vh)) * (var(--aspect-ratio)));
 }
@@ -41,9 +48,11 @@ body {
     --slide-width: calc(100 * var(--vw));
     --slide-height: calc(var(--slide-width) / (var(--aspect-ratio)));
 }
+
 .presentation.taller .slide {
     --slide-letterbox-height: calc((100 * var(--vh)) - var(--slide-height));
 }
+
 .presentation.wider .slide {
     --slide-height: calc(100 * var(--vh));
     --slide-width: calc(var(--slide-height) * (var(--aspect-ratio)));
@@ -53,16 +62,19 @@ body {
 .draft .slide {
     margin-bottom: 0.5rem;
     box-shadow: 0 0.05rem 0.3rem gray,
-                0 0.5rem 0 #eee;
+        0 0.5rem 0 #eee;
     display: inline-block;
 }
+
 .presentation .slide {
-    display: none;  /* will be overwritten for the currently active slide */
+    display: none;
+    /* will be overwritten for the currently active slide */
 }
 
 .slide-content {
     padding: 0 var(--side-margin);
-    box-sizing: content-box;  /* make sure to exclude borders from width/height attribute */
+    box-sizing: content-box;
+    /* make sure to exclude borders from width/height attribute */
     overflow: hidden;
     border-width: 0;
 }
@@ -76,12 +88,14 @@ body {
     border-style: solid;
     border-color: black;
 }
+
 .presentation.taller .slide-content {
     width: calc(var(--slide-width) - 2 * var(--side-margin));
     height: var(--slide-height);
     border-top-width: calc(var(--slide-letterbox-height) / 2);
     border-bottom-width: calc(var(--slide-letterbox-height) / 2);
 }
+
 .presentation.wider .slide-content {
     height: var(--slide-height);
     width: calc(var(--slide-width) - 2 * var(--side-margin));
@@ -91,7 +105,8 @@ body {
 
 .slide-number {
     font-family: var(--slide-number-font);
-    font-variant-numeric: tabular-nums lining-nums;  /* doin' a better job than whoever build the macos menu bar clock */
+    font-variant-numeric: tabular-nums lining-nums;
+    /* doin' a better job than whoever build the macos menu bar clock */
     position: absolute;
     font-weight: normal;
     font-size: 0.8rem;
@@ -102,6 +117,7 @@ body {
     width: 2rem;
     text-align: right;
 }
+
 .slide-number-total {
     display: var(--total-slide-number-display);
 }
@@ -109,13 +125,15 @@ body {
 .presentation.taller .slide-number {
     margin-top: calc(var(--slide-height) + var(--slide-letterbox-height) / 2 - 1.75rem);
 }
+
 .presentation.wider .slide-number {
     margin-left: calc(var(--slide-width) + var(--slide-letterbox-width) / 2 - 2.5rem);
 }
 
 .slide-progress {
     position: absolute;
-    /*width: calc(attr(data-progress) * var(--slide-width));*/  /* sadly, attr() outside of "content" is not supported by any browsers even though the spec provides for this use. the width is thus set explicitly using js – which works, but is less flexible */
+    /*width: calc(attr(data-progress) * var(--slide-width));*/
+    /* sadly, attr() outside of "content" is not supported by any browsers even though the spec provides for this use. the width is thus set explicitly using js – which works, but is less flexible */
     margin-top: 0;
     margin-left: 0;
     display: var(--slide-progress-display);
@@ -124,34 +142,41 @@ body {
 .presentation.taller .slide-progress {
     margin-top: calc(var(--slide-letterbox-height) / 2);
 }
+
 .presentation.wider .slide-progress {
     margin-left: calc(var(--slide-letterbox-width) / 2);
 }
 
 .slide-presenter-notes {
     display: block;
-    overflow: hidden;  /* prevent margin collapse */
+    overflow: hidden;
+    /* prevent margin collapse */
     font-size: 0.8rem;
     line-height: 1.2em;
     padding: 0 1em;
     color: white;
     background-image: linear-gradient(#111, #282828 0.4rem, #111);
 }
+
 .presentation .slide-presenter-notes {
-    display: none;  /* will be shown in separate window */
+    display: none;
+    /* will be shown in separate window */
 }
 
 /* presenter notes window */
 html.presenter-notes {
-    font-size: 3vw;  /* it'd be wrong to use var(--vw) here since this is a whole different window */
+    font-size: 3vw;
+    /* it'd be wrong to use var(--vw) here since this is a whole different window */
     min-height: 100%;
 }
+
 .presenter-notes body {
     margin: 0;
     background-image: linear-gradient(#222, #111);
     min-height: 100%;
     color: white;
 }
+
 .presenter-notes-meta {
     font-family: sans-serif;
     font-size: 1.75rem;
@@ -161,32 +186,41 @@ html.presenter-notes {
     text-align: center;
     font-variant-numeric: tabular-nums lining-nums;
 }
+
 .presenter-notes-meta #timer {
     float: left;
     font-weight: bold;
 }
+
 .presenter-notes-meta #clock {
     float: left;
 }
+
 .presenter-notes-meta #clock .seconds {
     opacity: 0.5;
 }
-.presenter-notes-meta #timer:not(:empty) + #clock {
+
+.presenter-notes-meta #timer:not(:empty)+#clock {
     font-size: 1rem;
     margin-left: 0.75rem;
 }
-.presenter-notes-meta #timer:not(:empty) + #clock:before {
+
+.presenter-notes-meta #timer:not(:empty)+#clock:before {
     content: '(';
 }
-.presenter-notes-meta #timer:not(:empty) + #clock:after {
+
+.presenter-notes-meta #timer:not(:empty)+#clock:after {
     content: ')';
 }
+
 .presenter-notes-meta #slide-number {
     float: right;
 }
+
 .presenter-notes-meta #slide-number .current {
     font-weight: bold;
 }
+
 .presenter-notes-notes {
     margin: 1rem;
 }
@@ -202,37 +236,54 @@ html.presenter-notes {
 }
 
 .md {
-    display: block;  /* its font-size and line-height will otherwise create a white bar at the bottom of the page in presentation mode */
+    display: block;
+    /* its font-size and line-height will otherwise create a white bar at the bottom of the page in presentation mode */
 }
+
 #mdContextMenu {
-    display: none;  /* display:hidden anyway, but that leaves its height in place, will otherwise create a white bar at the bottom of the page in presentation mode */
+    display: none;
+    /* display:hidden anyway, but that leaves its height in place, will otherwise create a white bar at the bottom of the page in presentation mode */
 }
+
 .markdeepFooter {
-    text-align: left;  /* the default right-aligned variant creates a horizontal scrollbar */
+    text-align: left;
+    /* the default right-aligned variant creates a horizontal scrollbar */
 }
+
 .presentation .markdeepFooter {
-    display: none;  /* sorry morgan */
+    display: none;
+    /* sorry morgan */
 }
 
 @media print {
-    :root {  /* fixes #25 */
+    :root {
+        /* fixes #25 */
         --vw: 1vw !important;
         --vh: 1vh !important;
     }
 
     .slide {
-        --slide-width: 640px;  /* for a 16:9 aspect ratio; may be overridden via js */
-        --slide-height: 360px;  /* for a 16:9 aspect ratio; may be overridden via js */
+        --slide-width: 640px;
+        /* for a 16:9 aspect ratio; may be overridden via js */
+        --slide-height: 360px;
+        /* for a 16:9 aspect ratio; may be overridden via js */
     }
-    .slide, .draft .slide, .presentation .slide {
-        page-break-before: always;  /* make sure to insert page breaks between slides (might not actually be needed anymore) */
+
+    .slide,
+    .draft .slide,
+    .presentation .slide {
+        page-break-before: always;
+        /* make sure to insert page breaks between slides (might not actually be needed anymore) */
         margin-bottom: 0 !important;
         box-shadow: none !important;
         display: inline-block !important;
     }
 
-    .slide-content, .draft .slide-content, .presentation .slide-content {
-        border-width: 0 !important;  /* letterboxing not needed here (shouldn't appear anyway, this just to fix potential weird rounding errors) */
+    .slide-content,
+    .draft .slide-content,
+    .presentation .slide-content {
+        border-width: 0 !important;
+        /* letterboxing not needed here (shouldn't appear anyway, this just to fix potential weird rounding errors) */
     }
 
     .slide-presenter-notes {
@@ -240,13 +291,14 @@ html.presenter-notes {
     }
 
     .markdeepFooter {
-        display: none;  /* again, sorry morgan */
+        display: none;
+        /* again, sorry morgan */
     }
 
     /* Ensure all incremental items are visible when printing */
     .incremental li,
-    .incremental-flat > ul > li,
-    .incremental-flat > ol > li {
+    .incremental-flat>ul>li,
+    .incremental-flat>ol>li {
         opacity: 1 !important;
     }
 
@@ -286,9 +338,12 @@ html.presenter-notes {
 .two-column .columns-container,
 .two-column-appear .columns-container {
     display: flex;
-    gap: 1rem; /* space between columns */
-    align-items: flex-start; /* align content to the top */
-    margin: 0rem 0; /* 减少上下外边距 */
+    gap: 1rem;
+    /* space between columns */
+    align-items: flex-start;
+    /* align content to the top */
+    margin: 0rem 0;
+    /* 减少上下外边距 */
 }
 
 .slide.two-column .column-left,
@@ -297,14 +352,21 @@ html.presenter-notes {
 .two-column .column-right,
 .two-column-appear .column-left,
 .two-column-appear .column-right {
-    flex: 1; /* each column takes up equal space */
-    width: 50%; /* fallback for older browsers */
-    min-width: 0; /* prevent overflow issues with flexbox */
-    padding: 0em 0.5em 0em 0.5em; /* 减少内边距 */
-    border-radius: 8px;
-    line-height: 1.4; /* 调整行高，减少垂直空间 */
+    flex: 1;
+    /* each column takes up equal space */
+    width: 50%;
+    /* fallback for older browsers */
+    min-width: 0;
+    /* prevent overflow issues with flexbox */
+    padding: 0em 0.5em 0em 0.5em;
+    /* 减少内边距 */
+    border-radius: 0.5rem;
+    line-height: 1.4;
+    /* 调整行高，减少垂直空间 */
     margin-top: 0.5em;
     font-size: 0.8em;
+    border: 1px solid #c0c0c0;
+    /* 深灰色边框 */
 }
 
 
@@ -313,24 +375,27 @@ html.presenter-notes {
 .two-column .column-left p,
 .two-column .column-right p,
 .two-column-appear .column-left p,
-.two-column-appear .column-right p{
+.two-column-appear .column-right p {
     margin: 0.5rem;
 }
 
 .slide.two-column .column-left,
 .two-column .column-left {
-    background-color: #e6f2ff; /* 浅蓝色底纹 */
+    background-color: #f5f5f5;
+    /* 浅灰色底纹 */
 }
 
 .slide.two-column .column-right,
 .two-column .column-right {
-    background-color: #e6f2ff; /* 浅蓝色底纹 */
+    background-color: #f5f5f5;
+    /* 浅灰色底纹 */
 }
 
 /* Restore background color for two-column-appear */
 .two-column-appear .column-left,
 .two-column-appear .column-right {
-    background-color: #e6f2ff; /* 浅蓝色底纹 */
+    background-color: #f5f5f5;
+    /* 浅灰色底纹 */
 }
 
 /* Ensure two-column-appear columns with appear1/appear2 classes are properly animated */
@@ -338,41 +403,43 @@ html.presenter-notes {
 /* This ensures the entire column (including background) appears sequentially */
 
 /* 小字标签内的字号 */
-.md small{
+.md small {
     line-height: 1.5em;
     font-size: 0.7em;
 }
 
-.asterisk{
+.asterisk {
     color: purple;
     font-style: normal;
     font-weight: bold;
 }
 
-.md .imagecaption, .md .tablecaption, .md .listingcaption{
+.md .imagecaption,
+.md .tablecaption,
+.md .listingcaption {
     font-size: 0.8em;
     font-style: normal;
 }
 
 /* For incremental builds (sequential display) */
 .incremental li,
-.incremental-flat > ul > li,
-.incremental-flat > ol > li {
+.incremental-flat>ul>li,
+.incremental-flat>ol>li {
     /* Dim in draft view */
     opacity: 0.5;
     transition: opacity 0.4s ease-in-out;
 }
 
 .presentation .incremental li,
-.presentation .incremental-flat > ul > li,
-.presentation .incremental-flat > ol > li {
+.presentation .incremental-flat>ul>li,
+.presentation .incremental-flat>ol>li {
     /* Fully hide in presentation view */
     opacity: 0.1;
 }
 
 .incremental li.visible,
-.incremental-flat > ul > li.visible,
-.incremental-flat > ol > li.visible {
+.incremental-flat>ul>li.visible,
+.incremental-flat>ol>li.visible {
     /* Make visible when class is added */
     opacity: 1;
 }
@@ -395,44 +462,60 @@ html.presenter-notes {
 }
 
 /* Highlight styles for list items based on leading symbol */
-li > span.highlight-red,
-li > span.highlight-orange,
-li > span.highlight-green,
-li > span.highlight-blue,
-li > span.highlight-purple {
+li>span.highlight-red,
+li>span.highlight-orange,
+li>span.highlight-green,
+li>span.highlight-blue,
+li>span.highlight-purple {
     padding: 0em 0.4em;
     border-radius: 5px;
 }
 
-li > span.highlight-red {
-    background-color: #ff9794; /* Light red */
+li>span.highlight-red {
+    background-color: #ff9794;
+    /* Light red */
 }
-li > span.highlight-orange {
-    background-color: #ffc78f; /* Light orange */
+
+li>span.highlight-orange {
+    background-color: #ffc78f;
+    /* Light orange */
 }
-li > span.highlight-green {
-    background-color: #a2f29a; /* Light green */
+
+li>span.highlight-green {
+    background-color: #a2f29a;
+    /* Light green */
 }
-li > span.highlight-blue {
-    background-color: #a6c6ff; /* Light blue */
+
+li>span.highlight-blue {
+    background-color: #a6c6ff;
+    /* Light blue */
 }
-li > span.highlight-purple {
-    background-color: #9f78ec; /* Light purple */
+
+li>span.highlight-purple {
+    background-color: #9f78ec;
+    /* Light purple */
 }
 
 /* Admonition Title Styling */
 .admonitionTitle {
-    font-size: 1.1em; /* Slightly larger than normal text */
-    font-weight: bold; /* Bold text */
-    border-bottom: 1px solid #ccc; /* Add a subtle solid bottom border */
-    padding-bottom: 0.2em; /* Space between title text and border */
-    margin-bottom: 0.5em; /* Space between title (with border) and content */
+    font-size: 1.1em;
+    /* Slightly larger than normal text */
+    font-weight: bold;
+    /* Bold text */
+    border-bottom: 1px solid #ccc;
+    /* Add a subtle solid bottom border */
+    padding-bottom: 0.2em;
+    /* Space between title text and border */
+    margin-bottom: 0.5em;
+    /* Space between title (with border) and content */
 }
 
 /* Custom Admonition Type: Question */
 .admonition.question {
-    border-left-color: #9b59b6 ; /* A nice purple color */
-    background-color: #f5eef8 ; /* A very light purple */
+    border-left-color: #9b59b6;
+    /* A nice purple color */
+    background-color: #f5eef8;
+    /* A very light purple */
 }
 
 .fontsize-buttons {
@@ -442,7 +525,7 @@ li > span.highlight-purple {
     z-index: 1000;
     display: grid;
     gap: 8px;
-    opacity:0;
+    opacity: 0;
     transition: opacity 0.2s ease-in-out;
 }
 
@@ -472,16 +555,16 @@ li > span.highlight-purple {
     font-size: 0.5em;
     border: none;
     cursor: pointer;
-    color:#bbb;
+    color: #bbb;
     background-color: transparent;
 }
 
-.md .admonition p{
+.md .admonition p {
     padding-top: 0%;
     line-height: 1em;
 }
 
 sup {
-    vertical-align:baseline;
-    font-size:1em;
+    vertical-align: baseline;
+    font-size: 1em;
 }
