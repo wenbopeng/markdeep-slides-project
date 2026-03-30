@@ -20,6 +20,23 @@ var currentBuildStep = 0;
 // make options available globally
 var options;
 
+function getNumberedSlideCount(totalSlideCount) {
+    return Math.max(totalSlideCount - 1, 0);
+}
+
+function buildSlideNumberMarkup(displaySlideNumber, totalSlideCount) {
+    return `${displaySlideNumber}<span class="slide-number-total">/${getNumberedSlideCount(totalSlideCount)}</span>`;
+}
+
+function buildSlideProgressStyle(displaySlideNumber, totalSlideCount) {
+    var numberedSlideCount = getNumberedSlideCount(totalSlideCount);
+    if (numberedSlideCount <= 0) {
+        return "width: 0;";
+    }
+
+    return "width: calc(" + displaySlideNumber / numberedSlideCount + " * var(--slide-width));";
+}
+
 function processFencedBlocks(nodes) {
     var newNodes = [];
     // Stack to track nested fences, each entry has: { colonCount, blockType, blockOptions, capturedNodes }
@@ -382,7 +399,7 @@ function initSlides() {
             if (slideCount != 0) {
                 var sn = document.createElement('div');
                 sn.className = "slide-number";
-                sn.innerHTML = `${slideCount}<span class="slide-number-total">/${totalSlideCount}</span>`;
+                sn.innerHTML = buildSlideNumberMarkup(slideCount, totalSlideCount);
                 slide.appendChild(sn);
 
                 // Ensure total slide number is visible if option is set
@@ -396,7 +413,7 @@ function initSlides() {
                 var sp = document.createElement('div');
                 sp.className = "slide-progress";
                 //sp.setAttribute("data-progress", slideCount / totalSlideCount);  // see commend in markdeep-slides.css
-                sp.setAttribute("style", "width: calc(" + slideCount / (totalSlideCount - 1) + " * var(--slide-width));");
+                sp.setAttribute("style", buildSlideProgressStyle(slideCount, totalSlideCount));
                 slide.appendChild(sp);
             }
 
@@ -664,7 +681,7 @@ function initSlides() {
 
             var sn = slide.querySelector('.slide-number');
             if (sn) {
-                sn.innerHTML = `${i}<span class="slide-number-total">/${totalSlideCount}</span>`;
+                sn.innerHTML = buildSlideNumberMarkup(i, totalSlideCount);
                 if (options.totalSlideNumber) {
                     sn.querySelector('.slide-number-total').style.display = 'inline';
                 }
@@ -672,7 +689,7 @@ function initSlides() {
 
             var sp = slide.querySelector('.slide-progress');
             if (sp) {
-                sp.setAttribute("style", "width: calc(" + i / (totalSlideCount) + " * var(--slide-width));");
+                sp.setAttribute("style", buildSlideProgressStyle(i, totalSlideCount));
             }
         }
     }
@@ -936,7 +953,7 @@ function createTocSlide(totalSlideCount) {
     // Also need to add slide number and progress bar for consistency
     var sn = document.createElement('div');
     sn.className = "slide-number";
-    sn.innerHTML = `1<span class="slide-number-total">/${totalSlideCount}</span>`;
+    sn.innerHTML = buildSlideNumberMarkup(1, totalSlideCount);
     slide.appendChild(sn);
 
     // Ensure total slide number is visible if option is set
@@ -946,7 +963,7 @@ function createTocSlide(totalSlideCount) {
 
     var sp = document.createElement('div');
     sp.className = "slide-progress";
-    sp.setAttribute("style", "width: calc(1 / " + totalSlideCount + " * var(--slide-width));");
+    sp.setAttribute("style", buildSlideProgressStyle(1, totalSlideCount));
     slide.appendChild(sp);
 
     return slide;
@@ -1251,7 +1268,7 @@ function updatePresenterNotes(slideNum) {
             presenterNotes = presenterNotesElement.innerHTML;
         }
 
-        presenterNotesWindow.document.getElementById("slide-number").innerHTML = `<span class="current">${slideNum}</span><span class="total">/${slideCount - 1}</span>`;
+        presenterNotesWindow.document.getElementById("slide-number").innerHTML = `<span class="current">${slideNum}</span><span class="total">/${getNumberedSlideCount(slideCount)}</span>`;
         presenterNotesWindow.document.getElementById("presenter-notes").innerHTML = presenterNotes;
     }
 }
@@ -1546,7 +1563,7 @@ function togglePresenterNotes() {
     <div class="presenter-notes-meta">
         <div id="timer"></div>
         <div id="clock"></div>
-        <div id="slide-number"><span class="current">${currentSlideNum}</span><span class="total">/${slideCount - 1}</span></div>
+        <div id="slide-number"><span class="current">${currentSlideNum}</span><span class="total">/${getNumberedSlideCount(slideCount)}</span></div>
         &nbsp;
     </div>
     <div class="presenter-notes-notes" id="presenter-notes"></div>
