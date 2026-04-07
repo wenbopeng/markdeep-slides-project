@@ -402,6 +402,24 @@ html.presenter-notes {
 /* The existing [class^="appear"] styles will handle the opacity transition */
 /* This ensures the entire column (including background) appears sequentially */
 
+/* 若某一栏包含图片或 Callout（admonition），则取消该栏的灰色背景和边框 */
+.slide.two-column .column-left:has(img),
+.slide.two-column .column-right:has(img),
+.two-column .column-left:has(img),
+.two-column .column-right:has(img),
+.two-column-appear .column-left:has(img),
+.two-column-appear .column-right:has(img),
+.slide.two-column .column-left:has(.admonition),
+.slide.two-column .column-right:has(.admonition),
+.two-column .column-left:has(.admonition),
+.two-column .column-right:has(.admonition),
+.two-column-appear .column-left:has(.admonition),
+.two-column-appear .column-right:has(.admonition) {
+    background-color: transparent;
+    border: none;
+}
+
+
 /* 小字标签内的字号 */
 .md small {
     line-height: 1.5em;
