@@ -1353,7 +1353,45 @@ function toggleFullscreen() {
 // 字号持久化 —— 通过 File System Access API 将字号标签写回源文件
 // ============================================================
 
-var _fontSizeFileHandle = null; // 当前会话的文件句柄缓存
+var _fontSizeFileHandle = null; // 当前 tab 内存缓存
+
+// ── IndexedDB 辅助：跨刷新持久化 FileSystemFileHandle ──
+var _IDB_NAME  = 'markdeep-slides-prefs';
+var _IDB_STORE = 'fileHandles';
+var _IDB_FONT_KEY = 'fontSizeFile';
+
+function _idbOpen() {
+    return new Promise(function (resolve, reject) {
+        var req = indexedDB.open(_IDB_NAME, 1);
+        req.onupgradeneeded = function (e) {
+            e.target.result.createObjectStore(_IDB_STORE);
+        };
+        req.onsuccess = function (e) { resolve(e.target.result); };
+        req.onerror   = function ()  { reject(req.error); };
+    });
+}
+async function _idbGet(key) {
+    try {
+        var db = await _idbOpen();
+        return new Promise(function (resolve) {
+            var tx  = db.transaction(_IDB_STORE, 'readonly');
+            var req = tx.objectStore(_IDB_STORE).get(key);
+            req.onsuccess = function () { resolve(req.result || null); };
+            req.onerror   = function () { resolve(null); };
+        });
+    } catch (e) { return null; }
+}
+async function _idbPut(key, value) {
+    try {
+        var db = await _idbOpen();
+        return new Promise(function (resolve) {
+            var tx = db.transaction(_IDB_STORE, 'readwrite');
+            tx.objectStore(_IDB_STORE).put(value, key);
+            tx.oncomplete = function () { resolve(true); };
+            tx.onerror    = function () { resolve(false); };
+        });
+    } catch (e) { return false; }
+}
 
 /** 转义正则特殊字符 */
 function _regexEscape(str) {
@@ -1378,32 +1416,60 @@ function _showFontSaveToast(msg, isError) {
     }, 2500);
 }
 
-/** 获取（或让用户选择）源文件的可读写句柄 */
+/**
+ * 获取源文件的可读写句柄。
+ * 优先级：内存缓存 → IndexedDB（跨刷新）→ 弹出文件选择器（仅首次或句柄失效时）。
+ * 文件选择器打开时，以 IndexedDB 中存储的旧句柄目录作为起始路径。
+ */
 async function _getFontSizeFileHandle() {
     if (!window.showOpenFilePicker) {
         _showFontSaveToast('⚠ 浏览器不支持文件写入（请使用 Chrome 或 Edge）', true);
         return null;
     }
-    // 复用本次会话已获取的句柄
+
+    // 1. 优先复用同一 tab 的内存缓存
     if (_fontSizeFileHandle) {
         try {
             var perm = await _fontSizeFileHandle.queryPermission({ mode: 'readwrite' });
             if (perm === 'granted') return _fontSizeFileHandle;
             perm = await _fontSizeFileHandle.requestPermission({ mode: 'readwrite' });
             if (perm === 'granted') return _fontSizeFileHandle;
-        } catch (e) {
-            _fontSizeFileHandle = null;
-        }
+        } catch (e) { _fontSizeFileHandle = null; }
     }
-    // 首次使用：弹出文件选择器（需要用户手势，此处在按钮 click 内调用，满足条件）
+
+    // 2. 尝试从 IndexedDB 恢复跨刷新的句柄
+    //    requestPermission 不会弹出文件选择器，只在浏览器顶部显示一次权限确认条
+    var storedHandle = await _idbGet(_IDB_FONT_KEY);
+    if (storedHandle) {
+        try {
+            var perm = await storedHandle.queryPermission({ mode: 'readwrite' });
+            if (perm === 'granted') {
+                _fontSizeFileHandle = storedHandle;
+                return _fontSizeFileHandle;
+            }
+            perm = await storedHandle.requestPermission({ mode: 'readwrite' });
+            if (perm === 'granted') {
+                _fontSizeFileHandle = storedHandle;
+                return _fontSizeFileHandle;
+            }
+        } catch (e) { /* 句柄失效，继续走文件选择器 */ }
+    }
+
+    // 3. 首次或句柄彻底失效：弹出文件选择器
+    //    用 storedHandle 作为 startIn，使选择器默认打开源文件所在目录
     try {
-        var handles = await window.showOpenFilePicker({
+        var pickerOpts = {
             types: [{ description: 'HTML 幻灯片', accept: { 'text/html': ['.html'] } }],
             multiple: false
-        });
+        };
+        if (storedHandle) pickerOpts.startIn = storedHandle;
+
+        var handles = await window.showOpenFilePicker(pickerOpts);
         _fontSizeFileHandle = handles[0];
         var perm = await _fontSizeFileHandle.requestPermission({ mode: 'readwrite' });
         if (perm !== 'granted') { _fontSizeFileHandle = null; return null; }
+        // 写入 IndexedDB，下次刷新后免选
+        await _idbPut(_IDB_FONT_KEY, _fontSizeFileHandle);
         return _fontSizeFileHandle;
     } catch (e) {
         return null; // 用户取消，静默处理
@@ -1463,11 +1529,11 @@ async function _persistFontSizeToSource(slideEl, targetClass) {
     // 保证内容以单个换行开头（标题行已带换行符，此处补齐）
     slideContent = slideContent.replace(/^\n*/, '\n');
 
-    // 在幻灯片内容开头插入新的字号标签
+    // 在幻灯片内容开头插入新的字号标签，前后各保留一个空行
     if (targetClass === 'small-text') {
-        slideContent = '\n[small-text]\n' + slideContent.replace(/^\n/, '');
+        slideContent = '\n[small-text]\n\n' + slideContent.replace(/^\n+/, '');
     } else if (targetClass === 'tiny-text') {
-        slideContent = '\n[tiny-text]\n' + slideContent.replace(/^\n/, '');
+        slideContent = '\n[tiny-text]\n\n' + slideContent.replace(/^\n+/, '');
     }
 
     var newSource = source.substring(0, headingEndIdx) + slideContent + afterHeading.substring(contentLen);
