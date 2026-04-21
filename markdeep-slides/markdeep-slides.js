@@ -1349,6 +1349,142 @@ function toggleFullscreen() {
     }
 }
 
+// ============================================================
+// 字号持久化 —— 通过 File System Access API 将字号标签写回源文件
+// ============================================================
+
+var _fontSizeFileHandle = null; // 当前会话的文件句柄缓存
+
+/** 转义正则特殊字符 */
+function _regexEscape(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** 在屏幕底部显示短暂的状态提示 */
+function _showFontSaveToast(msg, isError) {
+    var old = document.getElementById('_font-save-toast');
+    if (old) old.remove();
+    var el = document.createElement('div');
+    el.id = '_font-save-toast';
+    el.textContent = msg;
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);'
+        + 'background:' + (isError ? '#c0392b' : '#27ae60') + ';'
+        + 'color:#fff;padding:5px 14px;border-radius:6px;font-size:13px;'
+        + 'z-index:99999;opacity:1;transition:opacity 0.5s ease;pointer-events:none;';
+    document.body.appendChild(el);
+    setTimeout(function () {
+        el.style.opacity = '0';
+        setTimeout(function () { el.remove(); }, 500);
+    }, 2500);
+}
+
+/** 获取（或让用户选择）源文件的可读写句柄 */
+async function _getFontSizeFileHandle() {
+    if (!window.showOpenFilePicker) {
+        _showFontSaveToast('⚠ 浏览器不支持文件写入（请使用 Chrome 或 Edge）', true);
+        return null;
+    }
+    // 复用本次会话已获取的句柄
+    if (_fontSizeFileHandle) {
+        try {
+            var perm = await _fontSizeFileHandle.queryPermission({ mode: 'readwrite' });
+            if (perm === 'granted') return _fontSizeFileHandle;
+            perm = await _fontSizeFileHandle.requestPermission({ mode: 'readwrite' });
+            if (perm === 'granted') return _fontSizeFileHandle;
+        } catch (e) {
+            _fontSizeFileHandle = null;
+        }
+    }
+    // 首次使用：弹出文件选择器（需要用户手势，此处在按钮 click 内调用，满足条件）
+    try {
+        var handles = await window.showOpenFilePicker({
+            types: [{ description: 'HTML 幻灯片', accept: { 'text/html': ['.html'] } }],
+            multiple: false
+        });
+        _fontSizeFileHandle = handles[0];
+        var perm = await _fontSizeFileHandle.requestPermission({ mode: 'readwrite' });
+        if (perm !== 'granted') { _fontSizeFileHandle = null; return null; }
+        return _fontSizeFileHandle;
+    } catch (e) {
+        return null; // 用户取消，静默处理
+    }
+}
+
+/**
+ * 将字号设置写回源 HTML 文件中对应幻灯片位置。
+ * @param {Element} slideEl  - 幻灯片 DOM 元素
+ * @param {string|null} targetClass - 'small-text' | 'tiny-text' | null（恢复正常）
+ */
+async function _persistFontSizeToSource(slideEl, targetClass) {
+    // 取得幻灯片标题，用于定位源文件中的位置
+    var headingEl = slideEl.querySelector('h1, h2, h3, h4, h5, h6');
+    if (!headingEl) {
+        _showFontSaveToast('⚠ 未找到幻灯片标题，无法保存', true);
+        return;
+    }
+    var headingText = headingEl.textContent.trim();
+    var headingLevel = parseInt(headingEl.tagName[1], 10);
+    var hashes = '#'.repeat(headingLevel);
+
+    var fh = await _getFontSizeFileHandle();
+    if (!fh) return;
+
+    var file = await fh.getFile();
+    var source = await file.text();
+
+    // 在源文件中查找对应的标题行（允许标题文字前后存在 Markdown 粗体 **...** 标记）
+    var esc = _regexEscape(headingText);
+    var headingLineRe = new RegExp(
+        '(^' + _regexEscape(hashes) + '[ \\t]+[*_]*)(' + esc + ')([*_]*[ \\t]*(?:\\r?\\n|\\r))', 'm');
+    var hm = source.match(headingLineRe);
+    if (!hm) {
+        // 降级：忽略 # 数量做模糊匹配
+        hm = source.match(new RegExp(
+            '(^#{1,6}[ \\t]+[*_]*)(' + esc + ')([*_]*[ \\t]*(?:\\r?\\n|\\r))', 'm'));
+    }
+    if (!hm) {
+        _showFontSaveToast('⚠ 源文件中未找到幻灯片"' + headingText.substring(0, 10) + '…"', true);
+        return;
+    }
+
+    var headingEndIdx = hm.index + hm[0].length;
+    var afterHeading = source.substring(headingEndIdx);
+
+    // 查找下一个幻灯片边界（H1/H2 标题行 或 HR 分隔线 ---）
+    var nextBoundaryMatch = afterHeading.match(/\n(?=#{1,2}[ \t]|---[ \t]*(?:\r?\n|\r|\s*$))/m);
+    var contentLen = nextBoundaryMatch ? nextBoundaryMatch.index + 1 : afterHeading.length;
+    var slideContent = afterHeading.substring(0, contentLen);
+
+    // 移除已有的字号标签（无论位于幻灯片内容中的哪个位置）
+    slideContent = slideContent.replace(/[ \t]*\[small-text\][ \t]*\r?\n?/g, '');
+    slideContent = slideContent.replace(/[ \t]*\[tiny-text\][ \t]*\r?\n?/g, '');
+    // 清理连续三行以上的空行
+    slideContent = slideContent.replace(/\n{3,}/g, '\n\n');
+    // 保证内容以单个换行开头（标题行已带换行符，此处补齐）
+    slideContent = slideContent.replace(/^\n*/, '\n');
+
+    // 在幻灯片内容开头插入新的字号标签
+    if (targetClass === 'small-text') {
+        slideContent = '\n[small-text]\n' + slideContent.replace(/^\n/, '');
+    } else if (targetClass === 'tiny-text') {
+        slideContent = '\n[tiny-text]\n' + slideContent.replace(/^\n/, '');
+    }
+
+    var newSource = source.substring(0, headingEndIdx) + slideContent + afterHeading.substring(contentLen);
+
+    try {
+        var writable = await fh.createWritable();
+        await writable.write(newSource);
+        await writable.close();
+        var label = targetClass === 'small-text' ? '缩小 (○)' :
+                    targetClass === 'tiny-text'  ? '极小 (-)' : '正常 (+)';
+        _showFontSaveToast('✓ 字号已保存至源文件：' + label, false);
+    } catch (e) {
+        _showFontSaveToast('⚠ 写入失败：' + e.message, true);
+        console.error('[markdeep-slides] 写回字号标签失败：', e);
+    }
+}
+
 function injectFontSizeButtonStyles() {
     var style = document.createElement('style');
     style.textContent = `
@@ -1393,6 +1529,7 @@ function addFontSizeButtonsToSlides(slides) {
         if (slide) {
             slide.classList.remove('tiny-text');
             slide.classList.add('small-text');
+            _persistFontSizeToSource(slide, 'small-text');
         }
     };
 
@@ -1404,6 +1541,7 @@ function addFontSizeButtonsToSlides(slides) {
         if (slide) {
             slide.classList.remove('small-text');
             slide.classList.add('tiny-text');
+            _persistFontSizeToSource(slide, 'tiny-text');
         }
     };
 
@@ -1415,6 +1553,7 @@ function addFontSizeButtonsToSlides(slides) {
         if (slide) {
             slide.classList.remove('small-text');
             slide.classList.remove('tiny-text');
+            _persistFontSizeToSource(slide, null);
         }
     };
 
