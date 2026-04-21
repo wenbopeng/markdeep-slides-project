@@ -1358,7 +1358,8 @@ var _fontSizeFileHandle = null; // 当前 tab 内存缓存
 // ── IndexedDB 辅助：跨刷新持久化 FileSystemFileHandle ──
 var _IDB_NAME  = 'markdeep-slides-prefs';
 var _IDB_STORE = 'fileHandles';
-var _IDB_FONT_KEY = 'fontSizeFile';
+// 以当前页面路径为 key，每个 HTML 文件各自缓存独立的句柄
+var _IDB_FONT_KEY = 'fontSizeFile:' + window.location.pathname;
 
 function _idbOpen() {
     return new Promise(function (resolve, reject) {
