@@ -1,3 +1,4 @@
+window._markdeepRawSource = document.body.innerHTML;
 document.write(`
 <!-- Markdeep slides stuff -->
 <script>
