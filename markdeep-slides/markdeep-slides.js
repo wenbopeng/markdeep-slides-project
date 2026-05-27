@@ -1772,7 +1772,7 @@ function addFullSourceButtonToSlides(slides) {
         var btnContainer = slides[i].querySelector('.fontsize-buttons');
         if (!btnContainer) continue;
         var btn = document.createElement('button');
-        btn.textContent = '{ }';
+        btn.textContent = '{}';
         btn.title = '查看 / 编辑完整 Markdown 源文件';
         btn.className = 'full-source-btn';
         btn.onclick = function (e) {
