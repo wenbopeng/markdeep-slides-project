@@ -700,6 +700,9 @@ function initSlides() {
     injectFontSizeButtonStyles();
     addFontSizeButtonsToSlides(slides);
 
+    injectEditButtonStyles();
+    addEditButtonToSlides(slides);
+
     // Create a nav bar template, then clone and prepend it to each slide
     if (sections.length > 0) {
         var navBarTemplate = createNavBarTemplate();
@@ -1666,6 +1669,159 @@ function addFontSizeButtonsToSlides(slides) {
 
         slide.appendChild(buttons);
     }
+}
+
+// ============================================================
+// ============================================================
+// 幻灯片源码编辑 —— 弹出 textarea 直接编辑对应的 Markdown 原文
+// ============================================================
+
+function injectEditButtonStyles() {
+    var style = document.createElement('style');
+    style.textContent = `
+        .fontsize-buttons .edit-mode-btn        { color: #bbb; }
+        .fontsize-buttons .edit-mode-btn.active { color: #3498db; }
+        .slide-edit-overlay {
+            position: absolute; inset: 0;
+            z-index: 3000;
+            display: flex; flex-direction: column;
+            background: rgba(255,255,255,0.97);
+            padding: 8px; box-sizing: border-box;
+        }
+        .slide-edit-overlay textarea {
+            flex: 1;
+            font-family: monospace; font-size: 0.42em;
+            resize: none; border: 1px solid #b0cfe8;
+            border-radius: 4px; padding: 8px;
+            line-height: 1.5;
+        }
+        .slide-edit-overlay .edit-bar {
+            display: flex; justify-content: center;
+            gap: 12px; padding: 6px 0 0;
+            font-size: 0.45em;
+        }
+        .slide-edit-overlay .edit-bar button {
+            padding: 3px 16px; border-radius: 4px;
+            border: none; cursor: pointer; font-size: 1em;
+        }
+        .slide-edit-overlay .edit-save-btn   { background: #2ecc71; color: #fff; }
+        .slide-edit-overlay .edit-cancel-btn { background: #e74c3c; color: #fff; }
+    `;
+    document.head.appendChild(style);
+}
+
+function addEditButtonToSlides(slides) {
+    for (var i = 1; i < slides.length; i++) {
+        var slide = slides[i];
+        var btnContainer = slide.querySelector('.fontsize-buttons');
+        if (!btnContainer) continue;
+
+        var editBtn = document.createElement('button');
+        editBtn.textContent = '✎';
+        editBtn.title = '编辑幻灯片文字';
+        editBtn.className = 'edit-mode-btn';
+        editBtn.onclick = (function (slideEl, btn) {
+            return function (e) {
+                e.stopPropagation();
+                toggleEditMode(slideEl, btn);
+            };
+        })(slide, editBtn);
+
+        btnContainer.appendChild(editBtn);
+    }
+}
+
+function toggleEditMode(slideEl, btn) {
+    // 已有覆盖层则忽略重复点击
+    if (slideEl.querySelector('.slide-edit-overlay')) return;
+    enterEditMode(slideEl, btn);
+}
+
+/**
+ * 点击 ✎ 后：读取源文件，找到本张幻灯片对应的 Markdown 原文，
+ * 弹出 textarea 覆盖层供用户直接编辑，保存时整段替换回源文件。
+ */
+async function enterEditMode(slideEl, btn) {
+    var fh = await _getFontSizeFileHandle();
+    if (!fh) return;
+
+    var file  = await fh.getFile();
+    var source = await file.text();
+
+    // ── 用标题行定位幻灯片在源文件中的边界（复用 _persistFontSizeToSource 已验证的逻辑）
+    var headingEl = slideEl.querySelector('h1, h2, h3, h4, h5, h6');
+    var slideStart = 0, slideEnd = source.length;
+
+    if (headingEl) {
+        var headingText = headingEl.textContent.trim();
+        var level = parseInt(headingEl.tagName[1], 10);
+        var hashes = '#'.repeat(level);
+        var esc = _regexEscape(headingText);
+        var hm = source.match(new RegExp(
+            '(^' + _regexEscape(hashes) + '[ \\t]+[*_]*)(' + esc + ')([*_]*[ \\t]*(?:\\r?\\n|\\r))', 'm'));
+        if (!hm) {
+            hm = source.match(new RegExp(
+                '(^#{1,6}[ \\t]+[*_]*)(' + esc + ')([*_]*[ \\t]*(?:\\r?\\n|\\r))', 'm'));
+        }
+        if (!hm) {
+            _showFontSaveToast('⚠ 源文件中未找到幻灯片标题，请先保存一次字号', true);
+            return;
+        }
+        slideStart = hm.index;
+        var after = source.substring(hm.index + hm[0].length);
+        var nb = after.match(/\n(?=#{1,2}[ \t]|---[ \t]*(?:\r?\n|\r|\s*$))/m);
+        slideEnd = hm.index + hm[0].length + (nb ? nb.index + 1 : after.length);
+    }
+
+    var slideSource = source.substring(slideStart, slideEnd);
+
+    // ── 构建覆盖层 ──────────────────────────────────────────────────────────
+    if (btn) btn.classList.add('active');
+
+    var overlay = document.createElement('div');
+    overlay.className = 'slide-edit-overlay';
+
+    var ta = document.createElement('textarea');
+    ta.value = slideSource;
+    ta.spellcheck = false;
+
+    var bar = document.createElement('div');
+    bar.className = 'edit-bar';
+
+    var saveBtn = document.createElement('button');
+    saveBtn.textContent = '✓ 保存';
+    saveBtn.className = 'edit-save-btn';
+    saveBtn.onclick = async function (e) {
+        e.stopPropagation();
+        var newSlideSource = ta.value;
+        var newSource = source.substring(0, slideStart) + newSlideSource + source.substring(slideEnd);
+        try {
+            var w = await fh.createWritable();
+            await w.write(newSource);
+            await w.close();
+            overlay.remove();
+            if (btn) btn.classList.remove('active');
+            _showFontSaveToast('✓ 已保存，刷新页面生效', false);
+        } catch (err) {
+            _showFontSaveToast('⚠ 写入失败：' + err.message, true);
+        }
+    };
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.textContent = '✗ 取消';
+    cancelBtn.className = 'edit-cancel-btn';
+    cancelBtn.onclick = function (e) {
+        e.stopPropagation();
+        overlay.remove();
+        if (btn) btn.classList.remove('active');
+    };
+
+    bar.appendChild(saveBtn);
+    bar.appendChild(cancelBtn);
+    overlay.appendChild(ta);
+    overlay.appendChild(bar);
+    slideEl.appendChild(overlay);
+    ta.focus();
 }
 
 function fullscreenActions() {
