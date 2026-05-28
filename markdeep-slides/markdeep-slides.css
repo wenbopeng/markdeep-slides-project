@@ -463,6 +463,14 @@ html.presenter-notes {
     align-items: center;
 }
 
+.markdeep-mermaid svg {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+
 .markdeep-mermaid svg,
 .markdeep-d3-force svg {
     max-width: 100%;

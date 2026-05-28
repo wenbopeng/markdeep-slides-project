@@ -1016,6 +1016,9 @@ function initMathJax() {
 
 var _markdeepSlidesLibraryPromises = {};
 var _markdeepSlidesCharts = [];
+var _markdeepMermaidInitialized = false;
+var _markdeepMermaidCounter = 0;
+var _markdeepMermaidRenderQueue = Promise.resolve();
 
 function loadExternalLibrary(globalName, url) {
     if (window[globalName]) {
@@ -1092,13 +1095,25 @@ function renderECharts(sourceEl) {
 
 function renderMermaid(sourceEl) {
     var definition = sourceEl.textContent.trim();
-    var wrapper = replaceChartSource(sourceEl, 'markdeep-mermaid', 'auto');
-    wrapper.classList.add('mermaid');
-    wrapper.textContent = definition;
+    var wrapper = replaceChartSource(sourceEl, 'markdeep-mermaid');
 
     return loadExternalLibrary('mermaid', options.chartLibraryUrls.mermaid).then(function (mermaid) {
-        mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
-        return mermaid.run({ nodes: [wrapper] });
+        if (!_markdeepMermaidInitialized) {
+            mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
+            _markdeepMermaidInitialized = true;
+        }
+
+        _markdeepMermaidRenderQueue = _markdeepMermaidRenderQueue.catch(function () { }).then(function () {
+            var renderId = 'markdeep-mermaid-' + (++_markdeepMermaidCounter);
+            return mermaid.render(renderId, definition).then(function (result) {
+                wrapper.innerHTML = result.svg;
+                if (result.bindFunctions) {
+                    result.bindFunctions(wrapper);
+                }
+            });
+        });
+
+        return _markdeepMermaidRenderQueue;
     });
 }
 
