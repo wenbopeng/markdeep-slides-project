@@ -30,6 +30,7 @@ https://github.com/user-attachments/assets/52670bdc-39aa-4d61-992d-f7d9d5d3ad4b
     - **自定义分步**: 使用简单的语法精确控制页面上任何元素的出现顺序。
 - **双栏布局 (Two-Column Layout)**: 支持自定义左右两栏的宽度比例。
 - **嵌套围栏语法 (Nested Fenced Blocks)**: 支持多层嵌套的 `:::` 围栏块，可使用更多冒号（如 `::::` 或 `:::::` ）来包裹内层块。
+- **可视化图表 (Visualizations)**: 支持在 Markdown 中嵌入 Chart.js、ECharts、D3 force network 与 Mermaid 图表块。
 - **全局概览模式 (Overview Mode)**: 按 `O` 键可切换到缩略图网格视图，快速浏览和跳转到任意幻灯片。
 - **Obsidian Callout 兼容**: 完美支持 Obsidian 风格的 `[!NOTE]` 标注块语法。
 - **列表标注 (List Admonition)**: 为列表项添加特定前缀，即可实现不同颜色的高亮。
@@ -390,6 +391,55 @@ markdeepSlidesOptions= {
 | `.` | 黑屏 |
 | `N` | 打开演讲者备注窗口 |
 | `T` | 计时器开始/重置 |
+
+### 10. 可视化图表
+
+在 Markdown 中插入以 `chart:` 开头的代码块，渲染器会自动把代码块替换为图表，并按需加载外部库。
+
+支持类型：
+
+| 类型 | `chart:` | 配置内容 |
+|------|--------------|----------|
+| Chart.js | `chartjs` | Chart.js config JSON |
+| ECharts | `echarts` | ECharts option JSON |
+| D3.js | `d3-force` | `{ nodes, links }` JSON |
+| Mermaid | `mermaid` | Mermaid 文本定义 |
+
+示例：
+
+````markdown
+```json
+chart: echarts
+height: 12rem
+
+{
+  "xAxis": { "type": "category", "data": ["一月", "二月", "三月"] },
+  "yAxis": { "type": "value" },
+  "series": [
+    { "type": "line", "data": [12, 18, 25] }
+  ]
+}
+```
+````
+
+Mermaid 使用文本图定义：
+
+````markdown
+```text
+chart: mermaid
+
+flowchart LR
+    A[输入] --> B[提炼]
+    B --> C[幻灯片]
+```
+````
+
+注意：
+
+- JSON 必须是合法 JSON，不能包含注释或尾逗号。
+- 复杂统计图优先用 ECharts；基础折线、柱状、散点可用 Chart.js。
+- 复杂网络图可用 ECharts 的 `graph` 系列，或使用内置 `d3-force`。
+- 示例模板见 `chart-template.html`。
 
 ## 支持的布局方式
 

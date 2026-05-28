@@ -439,6 +439,67 @@ html.presenter-notes {
     font-style: normal;
 }
 
+/* Data-driven visualizations */
+.markdeep-chart {
+    width: 100%;
+    min-height: 8rem;
+    margin: 0.5rem 0;
+    overflow: hidden;
+}
+
+.markdeep-chart canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.markdeep-echarts,
+.markdeep-d3-force {
+    min-height: 10rem;
+}
+
+.markdeep-mermaid {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.markdeep-mermaid svg,
+.markdeep-d3-force svg {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.markdeep-d3-force .d3-force-links line {
+    stroke: #9aa4b2;
+    stroke-opacity: 0.65;
+}
+
+.markdeep-d3-force .d3-force-nodes circle {
+    stroke: #fff;
+    stroke-width: 1.5px;
+}
+
+.markdeep-d3-force .d3-force-labels text {
+    fill: #263238;
+    font-size: 0.45rem;
+    paint-order: stroke;
+    stroke: #fff;
+    stroke-width: 3px;
+    stroke-linejoin: round;
+}
+
+.markdeep-chart-error {
+    box-sizing: border-box;
+    height: auto !important;
+    min-height: 0;
+    padding: 0.5rem 0.7rem;
+    border-left: 0.2rem solid #c0392b;
+    background: #fdecea;
+    color: #8a1f11;
+    font-size: 0.75rem;
+    line-height: 1.35;
+}
+
 /* For incremental builds (sequential display) */
 .incremental li,
 .incremental-flat>ul>li,

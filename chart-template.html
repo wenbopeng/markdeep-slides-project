@@ -1,0 +1,140 @@
+<meta charset="utf-8">
+
+**可视化图表幻灯片模板**
+Chart.js / ECharts / D3 / Mermaid
+
+报告人
+
+%%图表基础%%
+
+# 图表语法
+
+## 图表块写法
+
+- 使用代码块第一行 `chart: 类型` 作为图表占位
+- `height: 高度` 控制图表高度
+- JSON 必须合法，不能写注释或尾逗号
+
+| 类型 | `chart:` | 适用场景 |
+|------|--------------|----------|
+| Chart.js | `chartjs` | 折线、柱状、散点 |
+| ECharts | `echarts` | 复杂统计图、关系图、地图 |
+| D3.js | `d3-force` | 力导向网络图 |
+| Mermaid | `mermaid` | 流程图、时序图、结构图 |
+
+%%统计图%%
+
+# 统计图
+
+## Chart.js 折线图
+
+```json
+chart: chartjs
+height: 12rem
+
+{
+  "type": "line",
+  "data": {
+    "labels": ["一月", "二月", "三月", "四月", "五月", "六月"],
+    "datasets": [
+      {
+        "label": "学习时长",
+        "data": [12, 18, 25, 31, 38, 46],
+        "borderColor": "#2563eb",
+        "backgroundColor": "rgba(37, 99, 235, 0.16)",
+        "tension": 0.32,
+        "fill": true
+      }
+    ]
+  },
+  "options": {
+    "responsive": true,
+    "maintainAspectRatio": false,
+    "plugins": {
+      "legend": { "display": true }
+    },
+    "scales": {
+      "y": { "beginAtZero": true, "title": { "display": true, "text": "小时" } }
+    }
+  }
+}
+```
+
+> [!note] 讲解重点
+>
+> 用折线图强调趋势，不要把每个数据点都讲一遍。
+
+## ECharts 散点图
+
+```json
+chart: echarts
+height: 12rem
+
+{
+  "tooltip": {
+    "trigger": "item"
+  },
+  "xAxis": {
+    "name": "投入时间",
+    "type": "value"
+  },
+  "yAxis": {
+    "name": "测验得分",
+    "type": "value"
+  },
+  "series": [
+    {
+      "name": "学习样本",
+      "type": "scatter",
+      "symbolSize": 14,
+      "data": [[2, 58], [3, 63], [4, 70], [5, 76], [6, 83], [7, 88], [8, 91]]
+    }
+  ]
+}
+```
+
+%%网络与流程%%
+
+# 网络与流程
+
+## D3 力导向网络图
+
+```json
+chart: d3-force
+height: 13rem
+
+{
+  "charge": -320,
+  "linkDistance": 95,
+  "nodes": [
+    { "id": "输入", "group": 1 },
+    { "id": "提炼", "group": 2 },
+    { "id": "分页", "group": 2 },
+    { "id": "图表", "group": 3 },
+    { "id": "讲解", "group": 4 }
+  ],
+  "links": [
+    { "source": "输入", "target": "提炼", "value": 2 },
+    { "source": "提炼", "target": "分页", "value": 2 },
+    { "source": "分页", "target": "图表", "value": 1 },
+    { "source": "图表", "target": "讲解", "value": 1 },
+    { "source": "提炼", "target": "讲解", "value": 1 }
+  ]
+}
+```
+
+## Mermaid 流程图
+
+```text
+chart: mermaid
+
+flowchart LR
+    A[输入文章] --> B[提炼要点]
+    B --> C{是否需要图表}
+    C -->|需要| D[生成图表块]
+    C -->|不需要| E[生成列表和表格]
+    D --> F[渲染幻灯片]
+    E --> F
+```
+
+<script src="markdeep-slides/slides-init.js"></script>

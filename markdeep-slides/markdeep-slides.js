@@ -1,3 +1,7 @@
+if (!window._markdeepRawSource && document.body && document.body.innerHTML.trim()) {
+    window._markdeepRawSource = document.body.innerHTML;
+}
+
 var currentSlideNum = 0;
 var slideCount = 0;
 
@@ -756,6 +760,7 @@ function initSlides() {
     addLetterboxing();
     relativizeDiagrams(options.diagramZoom);
     pauseVideos();
+    initVisualizations();
 
     // Convert blockquotes with [!type] syntax into admonitions
     function processAdmonitionBlockquotes() {
@@ -986,6 +991,12 @@ function processMarkdeepSlidesOptions() {
         breakOnHeadings: false,
         incremental: false,
         incrementalFlat: false, // Use camelCase for consistency
+        chartLibraryUrls: {
+            chartjs: 'https://cdn.jsdelivr.net/npm/chart.js',
+            d3: 'https://cdn.jsdelivr.net/npm/d3',
+            echarts: 'https://cdn.jsdelivr.net/npm/echarts',
+            mermaid: 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js'
+        },
         slideChangeHook: (oldSlide, newSlide) => { },
         modeChangeHook: (newMode) => { }
     };
@@ -1001,6 +1012,242 @@ function initMathJax() {
     script.type = "text/javascript";
     script.src = "markdeep-slides/lib/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_SVG"; //这里使用相对路径2511151223
     document.getElementsByTagName("head")[0].appendChild(script);
+}
+
+var _markdeepSlidesLibraryPromises = {};
+var _markdeepSlidesCharts = [];
+
+function loadExternalLibrary(globalName, url) {
+    if (window[globalName]) {
+        return Promise.resolve(window[globalName]);
+    }
+    if (_markdeepSlidesLibraryPromises[globalName]) {
+        return _markdeepSlidesLibraryPromises[globalName];
+    }
+
+    _markdeepSlidesLibraryPromises[globalName] = new Promise(function (resolve, reject) {
+        var script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+        script.onload = function () { resolve(window[globalName]); };
+        script.onerror = function () { reject(new Error('无法加载图表库：' + url)); };
+        document.head.appendChild(script);
+    });
+
+    return _markdeepSlidesLibraryPromises[globalName];
+}
+
+function parseChartJson(sourceEl) {
+    var text = sourceEl.textContent.trim();
+    if (!text) return null;
+    return JSON.parse(text);
+}
+
+function replaceChartSource(sourceEl, className, height) {
+    var wrapper = document.createElement('div');
+    wrapper.className = 'markdeep-chart ' + className;
+    wrapper.style.height = height || sourceEl.getAttribute('data-height') || '12rem';
+    sourceEl.parentNode.replaceChild(wrapper, sourceEl);
+    sourceEl._markdeepChartWrapper = wrapper;
+    return wrapper;
+}
+
+function showChartError(sourceEl, message) {
+    var wrapper;
+    if (sourceEl.parentNode) {
+        wrapper = replaceChartSource(sourceEl, 'markdeep-chart-error', 'auto');
+    } else {
+        wrapper = sourceEl._markdeepChartWrapper;
+        if (!wrapper) return;
+        wrapper.className = 'markdeep-chart markdeep-chart-error';
+        wrapper.style.height = 'auto';
+        wrapper.innerHTML = '';
+    }
+    wrapper.textContent = message;
+}
+
+function renderChartJs(sourceEl) {
+    var config = parseChartJson(sourceEl);
+    var wrapper = replaceChartSource(sourceEl, 'markdeep-chartjs');
+    var canvas = document.createElement('canvas');
+    wrapper.appendChild(canvas);
+
+    return loadExternalLibrary('Chart', options.chartLibraryUrls.chartjs).then(function (Chart) {
+        var chart = new Chart(canvas, config);
+        _markdeepSlidesCharts.push({ type: 'chartjs', instance: chart, el: wrapper });
+    });
+}
+
+function renderECharts(sourceEl) {
+    var chartOptions = parseChartJson(sourceEl);
+    var wrapper = replaceChartSource(sourceEl, 'markdeep-echarts');
+
+    return loadExternalLibrary('echarts', options.chartLibraryUrls.echarts).then(function (echarts) {
+        var chart = echarts.init(wrapper);
+        chart.setOption(chartOptions);
+        _markdeepSlidesCharts.push({ type: 'echarts', instance: chart, el: wrapper });
+        setTimeout(function () { chart.resize(); }, 0);
+    });
+}
+
+function renderMermaid(sourceEl) {
+    var definition = sourceEl.textContent.trim();
+    var wrapper = replaceChartSource(sourceEl, 'markdeep-mermaid', 'auto');
+    wrapper.classList.add('mermaid');
+    wrapper.textContent = definition;
+
+    return loadExternalLibrary('mermaid', options.chartLibraryUrls.mermaid).then(function (mermaid) {
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
+        return mermaid.run({ nodes: [wrapper] });
+    });
+}
+
+function renderD3Force(sourceEl) {
+    var data = parseChartJson(sourceEl);
+    var wrapper = replaceChartSource(sourceEl, 'markdeep-d3-force');
+
+    return loadExternalLibrary('d3', options.chartLibraryUrls.d3).then(function (d3) {
+        var width = wrapper.clientWidth || 800;
+        var height = wrapper.clientHeight || 420;
+        var nodes = (data.nodes || []).map(function (node) { return Object.assign({}, node); });
+        var links = (data.links || []).map(function (link) { return Object.assign({}, link); });
+        var color = d3.scaleOrdinal(d3.schemeTableau10);
+
+        var svg = d3.select(wrapper)
+            .append('svg')
+            .attr('viewBox', [0, 0, width, height])
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('role', 'img');
+
+        var link = svg.append('g')
+            .attr('class', 'd3-force-links')
+            .selectAll('line')
+            .data(links)
+            .join('line')
+            .attr('stroke-width', function (d) { return Math.sqrt(d.value || 1); });
+
+        var node = svg.append('g')
+            .attr('class', 'd3-force-nodes')
+            .selectAll('circle')
+            .data(nodes)
+            .join('circle')
+            .attr('r', function (d) { return d.r || 8; })
+            .attr('fill', function (d) { return color(d.group || 0); });
+
+        var label = svg.append('g')
+            .attr('class', 'd3-force-labels')
+            .selectAll('text')
+            .data(nodes)
+            .join('text')
+            .text(function (d) { return d.label || d.id; });
+
+        var simulation = d3.forceSimulation(nodes)
+            .force('link', d3.forceLink(links).id(function (d) { return d.id; }).distance(data.linkDistance || 90))
+            .force('charge', d3.forceManyBody().strength(data.charge || -260))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force('collide', d3.forceCollide().radius(function (d) { return (d.r || 8) + 6; }));
+
+        simulation.on('tick', function () {
+            link
+                .attr('x1', function (d) { return d.source.x; })
+                .attr('y1', function (d) { return d.source.y; })
+                .attr('x2', function (d) { return d.target.x; })
+                .attr('y2', function (d) { return d.target.y; });
+
+            node
+                .attr('cx', function (d) { return d.x; })
+                .attr('cy', function (d) { return d.y; });
+
+            label
+                .attr('x', function (d) { return d.x + 10; })
+                .attr('y', function (d) { return d.y + 4; });
+        });
+
+        _markdeepSlidesCharts.push({ type: 'd3-force', instance: simulation, el: wrapper });
+    });
+}
+
+function initVisualizations() {
+    normalizeChartCodeBlocks();
+    var sources = Array.from(document.querySelectorAll('script.markdeep-chart[type="application/json"], script.markdeep-chart[type="text/plain"]'));
+
+    sources.forEach(function (sourceEl) {
+        var chartType = (sourceEl.getAttribute('data-chart') || '').toLowerCase();
+        var renderPromise;
+
+        try {
+            if (chartType === 'chartjs' || chartType === 'chart.js') {
+                renderPromise = renderChartJs(sourceEl);
+            } else if (chartType === 'echarts') {
+                renderPromise = renderECharts(sourceEl);
+            } else if (chartType === 'mermaid') {
+                renderPromise = renderMermaid(sourceEl);
+            } else if (chartType === 'd3-force' || chartType === 'd3-network') {
+                renderPromise = renderD3Force(sourceEl);
+            } else {
+                throw new Error('未知图表类型：' + chartType);
+            }
+        } catch (err) {
+            showChartError(sourceEl, err.message);
+            return;
+        }
+
+        renderPromise.catch(function (err) {
+            showChartError(sourceEl, err.message);
+        });
+    });
+}
+
+function resizeVisualizations() {
+    _markdeepSlidesCharts.forEach(function (chart) {
+        if (chart.type === 'echarts' && chart.instance && chart.instance.resize) {
+            chart.instance.resize();
+        } else if (chart.type === 'chartjs' && chart.instance && chart.instance.resize) {
+            chart.instance.resize();
+        }
+    });
+}
+
+function normalizeChartCodeBlocks() {
+    document.querySelectorAll('pre.listing').forEach(function (pre) {
+        var code = pre.querySelector('code');
+        if (!code) return;
+
+        var lines = code.textContent.split(/\r?\n/);
+        var firstLine = lines[0] ? lines[0].trim() : '';
+        var chartMatch = firstLine.match(/^chart\s*:\s*([a-z0-9_.-]+)\s*$/i);
+        if (!chartMatch) return;
+
+        var chartType = chartMatch[1].toLowerCase();
+        var height = null;
+        var index = 1;
+
+        while (index < lines.length) {
+            var line = lines[index].trim();
+            var heightMatch = line.match(/^height\s*:\s*(.+)$/i);
+            if (heightMatch) {
+                height = heightMatch[1].trim();
+                index++;
+                continue;
+            }
+            if (line === '') {
+                index++;
+                continue;
+            }
+            break;
+        }
+
+        var sourceEl = document.createElement('script');
+        sourceEl.type = chartType === 'mermaid' ? 'text/plain' : 'application/json';
+        sourceEl.className = 'markdeep-chart';
+        sourceEl.setAttribute('data-chart', chartType);
+        if (height) {
+            sourceEl.setAttribute('data-height', height);
+        }
+        sourceEl.textContent = lines.slice(index).join('\n').trim();
+        pre.parentNode.replaceChild(sourceEl, pre);
+    });
 }
 
 // check if a slide is set via the location hash – if so, load it, else
@@ -1048,7 +1295,10 @@ function addLetterboxing() {
         root.classList.add('taller');
     }
 }
-window.addEventListener('resize', addLetterboxing);
+window.addEventListener('resize', function () {
+    addLetterboxing();
+    resizeVisualizations();
+});
 
 // make diagrams resize properly: markdeep diagrams have their width and
 // height attributes set to absoulute pixel values, which don't scale. so we
@@ -1261,6 +1511,7 @@ function showSlide(slideNum) {
     currentBuildStep = 0;
 
     updatePresenterNotes(slideNum);
+    setTimeout(resizeVisualizations, 0);
 }
 
 // load presenter notes for slide n into presenter notes window
@@ -1834,10 +2085,27 @@ async function showFullSourceOverlay() {
     ta.focus();
 }
 
-// 返回页面原始 Markdown 源内容（无需文件选择器）
-function _readSourceContent() {
-    if (window._markdeepRawSource) return Promise.resolve(window._markdeepRawSource);
-    return fetch(window.location.href).then(function(r) { return r.text(); }).catch(function() { return null; });
+// 返回页面原始 Markdown 源内容。
+// file:// 页面通常不能 fetch 自身，因此需要回退到文件句柄读取。
+async function _readSourceContent() {
+    if (window._markdeepRawSource) return window._markdeepRawSource;
+
+    if (/^https?:$/i.test(window.location.protocol)) {
+        try {
+            var response = await fetch(window.location.href, { cache: 'no-store' });
+            if (response.ok) return await response.text();
+        } catch (e) { /* 继续回退到文件选择器 */ }
+    }
+
+    var fh = await _getFontSizeFileHandle();
+    if (!fh) return null;
+
+    try {
+        var file = await fh.getFile();
+        return await file.text();
+    } catch (e) {
+        return null;
+    }
 }
 
 // 在 source 文本中定位 slideEl 对应的幻灯片边界，返回 {slideStart, slideEnd} 或 null
@@ -1866,7 +2134,7 @@ function _findSlideBoundaries(source, slideEl) {
 /**
  * 点击 ✎ 后：读取源文件，找到本张幻灯片对应的 Markdown 原文，
  * 弹出 textarea 覆盖层供用户直接编辑，保存时整段替换回源文件。
- * 打开覆盖层无需文件选择器；仅点击"保存"时才请求写入权限。
+ * 若页面没有缓存原始内容，则打开覆盖层时会请求选择源文件。
  */
 async function enterEditMode(slideEl, btn) {
     var source = await _readSourceContent();
