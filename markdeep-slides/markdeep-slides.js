@@ -1,6 +1,126 @@
-if (!window._markdeepRawSource && document.body && document.body.innerHTML.trim()) {
-    window._markdeepRawSource = document.body.innerHTML;
+function _captureMarkdeepRawSourceFromBody() {
+    if (!document.body) return '';
+
+    var chunks = [];
+    for (var i = 0; i < document.body.childNodes.length; i++) {
+        var node = document.body.childNodes[i];
+        if (node.nodeType === 3) {
+            chunks.push(node.textContent || '');
+        } else if (node.nodeType === 8) {
+            chunks.push('<!--' + node.nodeValue + '-->');
+        } else {
+            chunks.push(node.outerHTML || node.textContent || '');
+        }
+    }
+    return chunks.join('');
 }
+
+if (!window._markdeepRawSource && document.body) {
+    var _capturedMarkdeepRawSource = _captureMarkdeepRawSourceFromBody();
+    if (_capturedMarkdeepRawSource.trim()) {
+        window._markdeepRawSource = _capturedMarkdeepRawSource;
+    }
+}
+
+(function preprocessChartFences() {
+    var CHART_TYPES = ['mermaid', 'echarts', 'chartjs', 'chart\\.js', 'd3-force', 'd3-network'];
+    var pattern = new RegExp('```(' + CHART_TYPES.join('|') + ')\\b', 'gi');
+
+    function walk(node) {
+        if (node.nodeType === 3) {
+            var text = node.textContent;
+            var replaced = text.replace(pattern, function (_, type) {
+                return '```\nchart: ' + type.toLowerCase();
+            });
+            if (replaced !== text) node.textContent = replaced;
+        } else {
+            for (var i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i]);
+        }
+    }
+
+    if (document.body) walk(document.body);
+}());
+
+(function preprocessPlusLists() {
+    function processText(text) {
+        if (!/^\+ /m.test(text)) return text;
+
+        var lines = text.split('\n');
+        var result = [];
+        var inPlusGroup = false;
+        var inCodeFence = false;
+        var codeFenceChar = '';
+
+        function endGroup(nextLine) {
+            result.push('');       // blank line so Markdeep ends the list before :::
+            result.push(':::');
+            inPlusGroup = false;
+            result.push(nextLine);
+        }
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+
+            if (!inCodeFence) {
+                var fenceOpen = line.match(/^(`{3,}|~{3,})/);
+                if (fenceOpen) {
+                    inCodeFence = true;
+                    codeFenceChar = fenceOpen[1][0];
+                    if (inPlusGroup) endGroup(line);
+                    else result.push(line);
+                    continue;
+                }
+            } else {
+                if (new RegExp('^\\' + codeFenceChar + '{3,}\\s*$').test(line)) {
+                    inCodeFence = false;
+                    codeFenceChar = '';
+                }
+                result.push(line);
+                continue;
+            }
+
+            if (!inPlusGroup) {
+                if (/^\+ /.test(line)) {
+                    result.push(':::incremental');
+                    result.push('');   // blank line so Markdeep recognises the following - as a list
+                    inPlusGroup = true;
+                    result.push('- ' + line.slice(2));
+                } else {
+                    result.push(line);
+                }
+            } else {
+                if (/^\+ /.test(line)) {
+                    result.push('- ' + line.slice(2));
+                } else if (/^[ \t]/.test(line)) {
+                    result.push(line.replace(/^([ \t]*)\+ /, '$1- '));
+                } else {
+                    endGroup(line);
+                }
+            }
+        }
+
+        if (inPlusGroup) {
+            result.push('');
+            result.push(':::');
+        }
+
+        return result.join('\n');
+    }
+
+    function walk(node) {
+        if (node.nodeType === 3) {
+            var text = node.textContent;
+            var replaced = processText(text);
+            if (replaced !== text) node.textContent = replaced;
+        } else if (node.nodeType === 1) {
+            var tag = (node.tagName || '').toUpperCase();
+            if (tag === 'SCRIPT' || tag === 'STYLE') return;
+            for (var i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i]);
+        }
+    }
+
+    if (document.body) walk(document.body);
+}());
 
 var currentSlideNum = 0;
 var slideCount = 0;
@@ -1230,8 +1350,7 @@ function normalizeChartCodeBlocks() {
         if (!code) return;
 
         var lines = code.textContent.split(/\r?\n/);
-        var firstLine = lines[0] ? lines[0].trim() : '';
-        var chartMatch = firstLine.match(/^chart\s*:\s*([a-z0-9_.-]+)\s*$/i);
+        var chartMatch = (lines[0] || '').trim().match(/^chart\s*:\s*([a-z0-9_.-]+)\s*$/i);
         if (!chartMatch) return;
 
         var chartType = chartMatch[1].toLowerCase();
@@ -1241,15 +1360,8 @@ function normalizeChartCodeBlocks() {
         while (index < lines.length) {
             var line = lines[index].trim();
             var heightMatch = line.match(/^height\s*:\s*(.+)$/i);
-            if (heightMatch) {
-                height = heightMatch[1].trim();
-                index++;
-                continue;
-            }
-            if (line === '') {
-                index++;
-                continue;
-            }
+            if (heightMatch) { height = heightMatch[1].trim(); index++; continue; }
+            if (line === '') { index++; continue; }
             break;
         }
 
@@ -1257,9 +1369,7 @@ function normalizeChartCodeBlocks() {
         sourceEl.type = chartType === 'mermaid' ? 'text/plain' : 'application/json';
         sourceEl.className = 'markdeep-chart';
         sourceEl.setAttribute('data-chart', chartType);
-        if (height) {
-            sourceEl.setAttribute('data-height', height);
-        }
+        if (height) sourceEl.setAttribute('data-height', height);
         sourceEl.textContent = lines.slice(index).join('\n').trim();
         pre.parentNode.replaceChild(sourceEl, pre);
     });

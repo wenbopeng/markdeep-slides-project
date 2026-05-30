@@ -44,6 +44,12 @@ body {
     padding: 0;
 }
 
+html.presentation,
+html.presentation body {
+    overflow: hidden;
+    height: 100vh;
+}
+
 .slide {
     --slide-width: calc(100 * var(--vw));
     --slide-height: calc(var(--slide-width) / (var(--aspect-ratio)));
