@@ -41,6 +41,28 @@ if (!window._markdeepRawSource && document.body) {
     if (document.body) walk(document.body);
 }());
 
+// Ensure a blank `>` line exists between a callout marker line and the first
+// content line so Markdeep always creates two separate blockquote paragraphs.
+// Matches:  > [!type] Title\n> content
+// Inserts:  > [!type] Title\n>\n> content
+(function preprocessCalloutBlankLines() {
+    var pattern = /([ \t]*>[ \t]*\[!\w+\][^\n]*)(\r?\n)([ \t]*>[ \t]*\S)/g;
+
+    function walk(node) {
+        if (node.nodeType === 3) {
+            var text = node.textContent;
+            var replaced = text.replace(pattern, '$1$2>$2$3');
+            if (replaced !== text) node.textContent = replaced;
+        } else if (node.nodeType === 1) {
+            var tag = (node.tagName || '').toUpperCase();
+            if (tag === 'SCRIPT' || tag === 'STYLE') return;
+            for (var i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i]);
+        }
+    }
+
+    if (document.body) walk(document.body);
+}());
+
 (function preprocessPlusLists() {
     function processText(text) {
         if (!/^\+ /m.test(text)) return text;
