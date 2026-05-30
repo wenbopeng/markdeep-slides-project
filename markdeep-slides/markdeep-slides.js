@@ -5,14 +5,35 @@ function _captureMarkdeepRawSourceFromBody() {
     for (var i = 0; i < document.body.childNodes.length; i++) {
         var node = document.body.childNodes[i];
         if (node.nodeType === 3) {
+            // Text nodes: textContent already gives decoded characters.
             chunks.push(node.textContent || '');
         } else if (node.nodeType === 8) {
             chunks.push('<!--' + node.nodeValue + '-->');
         } else {
-            chunks.push(node.outerHTML || node.textContent || '');
+            var tag = (node.tagName || '').toLowerCase();
+            if (tag === 'script' || tag === 'style') {
+                // outerHTML of script/style serialises ">" inside the content as "&gt;"
+                // in some browsers (e.g. older Safari). Rebuild the tag manually so
+                // the raw ">" characters are preserved.
+                var attrs = '';
+                for (var j = 0; j < node.attributes.length; j++) {
+                    var a = node.attributes[j];
+                    attrs += ' ' + a.name + '="' + a.value.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"';
+                }
+                chunks.push('<' + tag + attrs + '>' + node.textContent + '</' + tag + '>');
+            } else {
+                chunks.push(node.outerHTML || node.textContent || '');
+            }
         }
     }
-    return chunks.join('');
+    // outerHTML serialisation in some browsers encodes ">" as "&gt;" inside
+    // element text content. Decode it back so the editing window always shows
+    // the same characters as the raw file.  Order matters: &amp; must come last
+    // so we don't double-decode "&amp;gt;" → "&gt;" → ">".
+    return chunks.join('')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
 }
 
 if (!window._markdeepRawSource && document.body) {
@@ -2233,8 +2254,18 @@ async function showFullSourceOverlay() {
 }
 
 // 返回页面原始 Markdown 源内容。
-// file:// 页面通常不能 fetch 自身，因此需要回退到文件句柄读取。
+// 优先直接读取磁盘文件（句柄已缓存时无需弹窗），避免 _markdeepRawSource
+// 经过 outerHTML 序列化后 > 被编码为 &gt; 的问题。
 async function _readSourceContent() {
+    // 1. 优先：内存中已有文件句柄，直接读磁盘，内容最准确
+    if (_fontSizeFileHandle) {
+        try {
+            var f = await _fontSizeFileHandle.getFile();
+            return await f.text();
+        } catch (e) { /* 权限过期，继续回退 */ }
+    }
+
+    // 2. 兜底：DOM 捕获的原始文本（仅在尚未获取文件句柄时使用）
     if (window._markdeepRawSource) return window._markdeepRawSource;
 
     if (/^https?:$/i.test(window.location.protocol)) {
@@ -2281,12 +2312,18 @@ function _findSlideBoundaries(source, slideEl) {
 /**
  * 点击 ✎ 后：读取源文件，找到本张幻灯片对应的 Markdown 原文，
  * 弹出 textarea 覆盖层供用户直接编辑，保存时整段替换回源文件。
- * 若页面没有缓存原始内容，则打开覆盖层时会请求选择源文件。
  */
 async function enterEditMode(slideEl, btn) {
-    var source = await _readSourceContent();
-    if (!source) {
-        _showFontSaveToast('⚠ 无法读取页面源内容', true);
+    // 直接从磁盘读文件，避免 _markdeepRawSource 经 outerHTML 序列化后
+    // > 被编码为 &gt; 的问题。与 showFullSourceOverlay 使用相同路径。
+    var fh = await _getFontSizeFileHandle();
+    if (!fh) return;
+
+    var source;
+    try {
+        source = await (await fh.getFile()).text();
+    } catch (e) {
+        _showFontSaveToast('⚠ 读取文件失败：' + e.message, true);
         return;
     }
 
