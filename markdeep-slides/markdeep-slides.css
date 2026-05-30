@@ -448,8 +448,7 @@ html.presenter-notes {
 /* Data-driven visualizations */
 .markdeep-chart {
     width: 100%;
-    min-height: 8rem;
-    margin: 0.5rem 0;
+    margin: 0.2rem 0;
     overflow: hidden;
 }
 

@@ -84,6 +84,27 @@ if (!window._markdeepRawSource && document.body) {
     if (document.body) walk(document.body);
 }());
 
+// Ensure a blank line exists between a fence opening marker and its first content line.
+// Without it Markdeep treats the content (e.g. a list) as a continuation paragraph.
+// Pattern: :::blocktype immediately followed (no blank line) by a non-empty line.
+(function preprocessFenceBlankLines() {
+    var pattern = /(:{3,}[a-zA-Z][^\n]*)(\r?\n)(?=[^\r\n])/g;
+
+    function walk(node) {
+        if (node.nodeType === 3) {
+            var text = node.textContent;
+            var replaced = text.replace(pattern, '$1$2$2');
+            if (replaced !== text) node.textContent = replaced;
+        } else if (node.nodeType === 1) {
+            var tag = (node.tagName || '').toUpperCase();
+            if (tag === 'SCRIPT' || tag === 'STYLE') return;
+            for (var i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i]);
+        }
+    }
+
+    if (document.body) walk(document.body);
+}());
+
 (function preprocessPlusLists() {
     function processText(text) {
         if (!/^\+ /m.test(text)) return text;
@@ -1212,7 +1233,14 @@ function parseChartJson(sourceEl) {
 function replaceChartSource(sourceEl, className, height) {
     var wrapper = document.createElement('div');
     wrapper.className = 'markdeep-chart ' + className;
-    wrapper.style.height = height || sourceEl.getAttribute('data-height') || '12rem';
+    var explicitHeight = height || sourceEl.getAttribute('data-height');
+    if (explicitHeight) {
+        wrapper.style.height = explicitHeight;
+        wrapper.style.minHeight = '0';
+    } else {
+        wrapper.style.height = '12rem';
+        wrapper.style.minHeight = '8rem';
+    }
     sourceEl.parentNode.replaceChild(wrapper, sourceEl);
     sourceEl._markdeepChartWrapper = wrapper;
     return wrapper;
@@ -2102,15 +2130,23 @@ function injectEditButtonStyles() {
         .fontsize-buttons .edit-mode-btn        { color: #bbb; }
         .fontsize-buttons .edit-mode-btn.active { color: #3498db; }
         .slide-edit-overlay {
-            position: absolute; inset: 0;
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(90vw, 52rem);
+            height: min(55vh, 20rem);
             z-index: 3000;
             display: flex; flex-direction: column;
-            background: rgba(255,255,255,0.97);
+            background: #fff;
+            border: 1px solid #b0cfe8;
+            border-radius: 8px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
             padding: 8px; box-sizing: border-box;
         }
         .slide-edit-overlay textarea {
             flex: 1;
-            font-family: monospace; font-size: 0.42em;
+            font-family: monospace; font-size: 13px;
             resize: none; border: 1px solid #b0cfe8;
             border-radius: 4px; padding: 8px;
             line-height: 1.5;
@@ -2118,7 +2154,7 @@ function injectEditButtonStyles() {
         .slide-edit-overlay .edit-bar {
             display: flex; justify-content: center;
             gap: 12px; padding: 6px 0 0;
-            font-size: 0.45em;
+            font-size: 13px;
         }
         .slide-edit-overlay .edit-bar button {
             padding: 3px 16px; border-radius: 4px;
