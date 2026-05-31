@@ -44,7 +44,7 @@ if (!window._markdeepRawSource && document.body) {
 }
 
 (function preprocessChartFences() {
-    var CHART_TYPES = ['mermaid', 'echarts', 'chartjs', 'chart\\.js', 'd3-force', 'd3-network'];
+    var CHART_TYPES = ['mermaid', 'echarts', 'chartjs', 'chart\\.js', 'd3-force', 'd3-network', 'svg'];
     var pattern = new RegExp('```(' + CHART_TYPES.join('|') + ')\\b', 'gi');
 
     function walk(node) {
@@ -1308,6 +1308,26 @@ function renderMermaid(sourceEl) {
     });
 }
 
+function renderSVG(sourceEl) {
+    var svgContent = sourceEl.textContent.trim();
+    var explicitHeight = sourceEl.getAttribute('data-height');
+    var wrapper = replaceChartSource(sourceEl, 'markdeep-svg', explicitHeight || 'auto');
+    wrapper.innerHTML = svgContent;
+    var svgEl = wrapper.querySelector('svg');
+    if (svgEl) {
+        if (!svgEl.getAttribute('viewBox') && svgEl.getAttribute('width') && svgEl.getAttribute('height')) {
+            svgEl.setAttribute('viewBox', '0 0 ' + svgEl.getAttribute('width') + ' ' + svgEl.getAttribute('height'));
+        }
+        svgEl.removeAttribute('width');
+        svgEl.removeAttribute('height');
+        svgEl.style.display = 'block';
+        svgEl.style.width = '100%';
+        // 有显式高度时撑满容器，否则按 viewBox 比例自适应
+        svgEl.style.height = explicitHeight ? '100%' : 'auto';
+    }
+    return Promise.resolve();
+}
+
 function renderD3Force(sourceEl) {
     var data = parseChartJson(sourceEl);
     var wrapper = replaceChartSource(sourceEl, 'markdeep-d3-force');
@@ -1391,6 +1411,8 @@ function initVisualizations() {
                 renderPromise = renderMermaid(sourceEl);
             } else if (chartType === 'd3-force' || chartType === 'd3-network') {
                 renderPromise = renderD3Force(sourceEl);
+            } else if (chartType === 'svg') {
+                renderPromise = renderSVG(sourceEl);
             } else {
                 throw new Error('未知图表类型：' + chartType);
             }
@@ -1437,7 +1459,7 @@ function normalizeChartCodeBlocks() {
         }
 
         var sourceEl = document.createElement('script');
-        sourceEl.type = chartType === 'mermaid' ? 'text/plain' : 'application/json';
+        sourceEl.type = (chartType === 'mermaid' || chartType === 'svg') ? 'text/plain' : 'application/json';
         sourceEl.className = 'markdeep-chart';
         sourceEl.setAttribute('data-chart', chartType);
         if (height) sourceEl.setAttribute('data-height', height);
@@ -2269,7 +2291,7 @@ async function showFullSourceOverlay() {
             await w.write(ta.value);
             await w.close();
             overlay.remove();
-            _showFontSaveToast('✓ 已保存，刷新页面生效', false);
+            _showFontSaveToast('✓ 已保存', false);
         } catch (err) {
             _showFontSaveToast('⚠ 写入失败：' + err.message, true);
         }
@@ -2345,6 +2367,8 @@ function _findSlideBoundaries(source, slideEl) {
     return { slideStart: slideStart, slideEnd: slideEnd };
 }
 
+
+
 /**
  * 点击 ✎ 后：读取源文件，找到本张幻灯片对应的 Markdown 原文，
  * 弹出 textarea 覆盖层供用户直接编辑，保存时整段替换回源文件。
@@ -2388,24 +2412,13 @@ async function enterEditMode(slideEl, btn) {
     saveBtn.className = 'edit-save-btn';
     saveBtn.onclick = async function (e) {
         e.stopPropagation();
-        var newSlideSource = ta.value;
-        var fh = await _getFontSizeFileHandle();
-        if (!fh) return;
         try {
-            var file = await fh.getFile();
-            var currentSource = await file.text();
-            var currentBounds = _findSlideBoundaries(currentSource, slideEl);
-            if (!currentBounds) {
-                _showFontSaveToast('⚠ 保存时未能定位幻灯片位置', true);
-                return;
-            }
-            var newSource = currentSource.substring(0, currentBounds.slideStart) + newSlideSource + currentSource.substring(currentBounds.slideEnd);
             var w = await fh.createWritable();
-            await w.write(newSource);
+            await w.write(source.substring(0, bounds.slideStart) + ta.value + source.substring(bounds.slideEnd));
             await w.close();
             overlay.remove();
             if (btn) btn.classList.remove('active');
-            _showFontSaveToast('✓ 已保存，刷新页面生效', false);
+            _showFontSaveToast('✓ 已保存', false);
         } catch (err) {
             _showFontSaveToast('⚠ 写入失败：' + err.message, true);
         }

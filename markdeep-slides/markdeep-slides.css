@@ -408,13 +408,31 @@ html.presenter-notes {
 /* The existing [class^="appear"] styles will handle the opacity transition */
 /* This ensures the entire column (including background) appears sequentially */
 
-/* 若某一栏包含图片或 Callout（admonition），则取消该栏的灰色背景和边框 */
+/* 若某一栏包含图片、Mermaid、SVG 或 Callout（admonition），则取消该栏的灰色背景和边框 */
 .slide.two-column .column-left:has(img),
 .slide.two-column .column-right:has(img),
 .two-column .column-left:has(img),
 .two-column .column-right:has(img),
 .two-column-appear .column-left:has(img),
 .two-column-appear .column-right:has(img),
+.slide.two-column .column-left:has(.markdeep-mermaid),
+.slide.two-column .column-right:has(.markdeep-mermaid),
+.two-column .column-left:has(.markdeep-mermaid),
+.two-column .column-right:has(.markdeep-mermaid),
+.two-column-appear .column-left:has(.markdeep-mermaid),
+.two-column-appear .column-right:has(.markdeep-mermaid),
+.slide.two-column .column-left:has(.markdeep-svg),
+.slide.two-column .column-right:has(.markdeep-svg),
+.two-column .column-left:has(.markdeep-svg),
+.two-column .column-right:has(.markdeep-svg),
+.two-column-appear .column-left:has(.markdeep-svg),
+.two-column-appear .column-right:has(.markdeep-svg),
+.slide.two-column .column-left:has(svg),
+.slide.two-column .column-right:has(svg),
+.two-column .column-left:has(svg),
+.two-column .column-right:has(svg),
+.two-column-appear .column-left:has(svg),
+.two-column-appear .column-right:has(svg),
 .slide.two-column .column-left:has(.admonition),
 .slide.two-column .column-right:has(.admonition),
 .two-column .column-left:has(.admonition),
@@ -499,6 +517,16 @@ html.presenter-notes {
     stroke: #fff;
     stroke-width: 3px;
     stroke-linejoin: round;
+}
+
+.markdeep-svg {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.markdeep-svg svg {
+    max-width: 100%;
 }
 
 .markdeep-chart-error {
