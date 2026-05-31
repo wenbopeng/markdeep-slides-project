@@ -36,6 +36,20 @@ function _captureMarkdeepRawSourceFromBody() {
         .replace(/&amp;/g, '&');
 }
 
+// Intercept markdeepOptions assignment to enforce smartQuotes:false.
+// Markdeep's smart-quote logic maps " to « for French/Spanish/Catalan but fails
+// to convert the closing " (language table uses &rtquo; while the code looks up
+// &rdquo;), producing broken output like «word". Disabling it unconditionally is
+// safe for presentations where authors control their own typography.
+(function () {
+    var _stored = {};
+    Object.defineProperty(window, 'markdeepOptions', {
+        configurable: true,
+        get: function () { return _stored; },
+        set: function (val) { _stored = Object.assign({}, val, { smartQuotes: false }); }
+    });
+})();
+
 if (!window._markdeepRawSource && document.body) {
     var _capturedMarkdeepRawSource = _captureMarkdeepRawSourceFromBody();
     if (_capturedMarkdeepRawSource.trim()) {
@@ -207,6 +221,9 @@ var currentBuildStep = 0;
 
 // Overview zoom: number of card columns per row (2–10)
 var overviewColumns = 4;
+
+// Overview pinch-to-zoom: CSS zoom level applied to body in overview mode
+var overviewBodyZoom = 1.0;
 
 // make options available globally
 var options;
@@ -2557,6 +2574,37 @@ function updateOverviewToolbarState() {
     if (btnIn)  { btnIn.disabled  = (overviewColumns <= 2);  }
 }
 
+// Handle trackpad pinch-to-zoom in overview mode.
+// Uses CSS `zoom` on body — the same mechanism as native browser zoom (Cmd+/−),
+// so the entire page scales uniformly without touching any font-size values.
+// Scroll position is adjusted so the point under the cursor stays fixed.
+function handleOverviewPinch(event) {
+    if (!document.documentElement.classList.contains('overview')) return;
+    if (!event.ctrlKey) return;
+
+    event.preventDefault();
+
+    var delta = event.deltaY;
+    if (event.deltaMode === 1) delta *= 15;   // line mode → pixels
+    if (event.deltaMode === 2) delta *= 300;  // page mode → pixels
+
+    var oldZoom = overviewBodyZoom;
+    // Exponential sensitivity: pow(0.99, Δ) ≈ 1% per pixel of pinch
+    overviewBodyZoom = Math.max(0.2, Math.min(5.0,
+        overviewBodyZoom * Math.pow(0.99, delta)
+    ));
+
+    document.body.style.zoom = overviewBodyZoom;
+
+    // Anchor zoom to cursor: keep the page-pixel under the cursor stationary.
+    // With CSS zoom, scrollX/Y are in viewport pixels; page pixels = scroll / zoom.
+    var ratio = overviewBodyZoom / oldZoom;
+    window.scrollTo(
+        (window.scrollX + event.clientX) * ratio - event.clientX,
+        (window.scrollY + event.clientY) * ratio - event.clientY
+    );
+}
+
 // ── end Overview zoom helpers ────────────────────────────────────────────────
 
 // toggles overview mode (grid view of all slides)
@@ -2564,11 +2612,15 @@ function toggleOverview() {
     var root = document.documentElement;
 
     if (root.classList.contains("overview")) {
-        // Exit overview mode
+        // Exit overview mode — reset pinch zoom before leaving
+        document.body.style.zoom = '';
+        overviewBodyZoom = 1.0;
         root.classList.remove("overview");
         showSlide(currentSlideNum);
     } else {
-        // Enter overview mode
+        // Enter overview mode — start from zoom = 1
+        overviewBodyZoom = 1.0;
+        document.body.style.zoom = '';
         root.classList.add("overview");
 
         // Apply card size for current column count
@@ -2801,6 +2853,8 @@ function keyPress(event) {
 // Wait for DOM to be fully loaded before setting event listeners
 document.addEventListener('DOMContentLoaded', function () {
     document.body.onkeydown = keyPress;
+    // Pinch-to-zoom in overview: must be non-passive to call preventDefault
+    document.addEventListener('wheel', handleOverviewPinch, { passive: false });
 });
 
 // set --vw and --vw css variables to viewport size, EXCLUDING the scroll bars
