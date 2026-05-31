@@ -693,13 +693,19 @@ sup {
    Overview Mode (Grid View) - Press 'O'
    ======================================== */
 html.overview {
-    height: 100% !important;
+    /* Let html scroll; height must not be fixed so tall grids can extend */
+    height: auto !important;
+    min-height: 100% !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
 }
 
 html.overview body {
-    background-color: #1a1a2e !important;
+    /* Override html.presentation body { overflow:hidden; height:100vh } */
+    height: auto !important;
+    overflow: visible !important;
     min-height: 100% !important;
+    background-color: #1a1a2e !important;
 }
 
 html.overview .md {
@@ -720,8 +726,8 @@ html.overview .slide {
     position: relative !important;
     top: auto !important;
     left: auto !important;
-    width: 280px !important;
-    height: 158px !important;
+    width: var(--ov-card-w, 280px) !important;
+    height: var(--ov-card-h, 158px) !important;
     transform: none !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
     cursor: pointer !important;
@@ -740,12 +746,14 @@ html.overview .slide:hover {
 }
 
 html.overview .slide .slide-content {
-    transform: scale(0.15) !important;
+    /* scale driven by --ov-scale (set in JS) so text grows/shrinks with card.
+       Width/height are fixed at the 280px-card reference size (600% × 280 = 1680px)
+       so that font layout is stable; only the scale changes. */
+    transform: scale(var(--ov-scale, 0.15)) !important;
     transform-origin: top left !important;
-    width: 600% !important;
-    height: 600% !important;
+    width: 1680px !important;
+    height: 948px !important;
     pointer-events: none !important;
-    /* Keep original padding (var(--side-margin)) for proper margins */
     border-width: 0 !important;
     border: none !important;
 }
@@ -763,4 +771,55 @@ html.overview .slide-logo {
 
 html.overview .slide.active {
     border-color: #e74c3c !important;
+}
+
+/* Overview zoom toolbar */
+#overview-toolbar {
+    display: none;
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 9999;
+    background: rgba(20, 20, 40, 0.78);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 4px 6px;
+    gap: 4px;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    user-select: none;
+}
+
+html.overview #overview-toolbar {
+    display: flex;
+}
+
+#overview-toolbar .ov-zoom-btn {
+    background: transparent;
+    border: none;
+    color: #ccc;
+    font-size: 0.8rem;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+#overview-toolbar .ov-zoom-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+#overview-toolbar .ov-zoom-btn:disabled {
+    opacity: 0.25;
+    cursor: default;
 }

@@ -205,6 +205,9 @@ var modeChangeHook = (newMode) => { };
 var buildItems = [];
 var currentBuildStep = 0;
 
+// Overview zoom: number of card columns per row (2–10)
+var overviewColumns = 4;
+
 // make options available globally
 var options;
 
@@ -2477,6 +2480,85 @@ function toggleBlack() {
     }
 }
 
+// ── Overview zoom helpers ────────────────────────────────────────────────────
+
+// Compute card pixel width for a given column count.
+function computeOverviewCardWidth(cols) {
+    var gap = 15;      // matches CSS gap: 15px
+    var padding = 30;  // matches CSS padding: 30px on each side
+    var availWidth = window.innerWidth - 2 * padding - (cols - 1) * gap;
+    return Math.max(60, availWidth / cols);
+}
+
+// Set card dimensions and scale via CSS custom properties on <html>.
+// .slide-content is fixed at 1680×948px (the 280px-card reference layout).
+// scale = 0.15 × (cardWidth / 280), so text grows/shrinks proportionally
+// with the card — visual font size = dom_font_size × scale.
+var OV_REF_W = 280;   // reference card width that corresponds to scale 0.15
+var OV_BASE_SCALE = 0.15;
+function applyOverviewZoom() {
+    var cardWidth  = Math.round(computeOverviewCardWidth(overviewColumns));
+    var cardHeight = Math.round(cardWidth * 9 / 16);
+    var scale = OV_BASE_SCALE * cardWidth / OV_REF_W;
+    document.documentElement.style.setProperty('--ov-card-w', cardWidth  + 'px');
+    document.documentElement.style.setProperty('--ov-card-h', cardHeight + 'px');
+    document.documentElement.style.setProperty('--ov-scale',  scale.toFixed(5));
+}
+
+// Create (or refresh) the floating zoom toolbar shown in overview mode.
+function ensureOverviewToolbar() {
+    if (document.getElementById('overview-toolbar')) {
+        updateOverviewToolbarState();
+        return;
+    }
+
+    var toolbar = document.createElement('div');
+    toolbar.id = 'overview-toolbar';
+
+    var btnOut = document.createElement('button');
+    btnOut.className = 'ov-zoom-btn';
+    btnOut.id = 'overview-zoom-out';
+    btnOut.title = '缩小缩略图';
+    btnOut.textContent = '−';
+    btnOut.onclick = function (e) {
+        e.stopPropagation();
+        if (overviewColumns < 10) {
+            overviewColumns++;
+            applyOverviewZoom();
+            updateOverviewToolbarState();
+        }
+    };
+
+    var btnIn = document.createElement('button');
+    btnIn.className = 'ov-zoom-btn';
+    btnIn.id = 'overview-zoom-in';
+    btnIn.title = '放大缩略图';
+    btnIn.textContent = '+';
+    btnIn.onclick = function (e) {
+        e.stopPropagation();
+        if (overviewColumns > 2) {
+            overviewColumns--;
+            applyOverviewZoom();
+            updateOverviewToolbarState();
+        }
+    };
+
+    toolbar.appendChild(btnOut);
+    toolbar.appendChild(btnIn);
+    document.body.appendChild(toolbar);
+
+    updateOverviewToolbarState();
+}
+
+function updateOverviewToolbarState() {
+    var btnOut = document.getElementById('overview-zoom-out');
+    var btnIn  = document.getElementById('overview-zoom-in');
+    if (btnOut) { btnOut.disabled = (overviewColumns >= 10); }
+    if (btnIn)  { btnIn.disabled  = (overviewColumns <= 2);  }
+}
+
+// ── end Overview zoom helpers ────────────────────────────────────────────────
+
 // toggles overview mode (grid view of all slides)
 function toggleOverview() {
     var root = document.documentElement;
@@ -2488,6 +2570,12 @@ function toggleOverview() {
     } else {
         // Enter overview mode
         root.classList.add("overview");
+
+        // Apply card size for current column count
+        applyOverviewZoom();
+
+        // Show zoom toolbar
+        ensureOverviewToolbar();
 
         // Add click handlers to slides
         Array.from(document.getElementsByClassName("slide")).forEach(function (slide, index) {
@@ -2654,6 +2742,28 @@ function keyPress(event) {
         case 79:  // o
             toggleOverview();
             return false;
+        case 187: // = / + (zoom in: fewer columns → bigger cards)
+        case 61:  // = / + on some keyboards/Firefox
+            if (document.documentElement.classList.contains('overview')) {
+                if (overviewColumns > 2) {
+                    overviewColumns--;
+                    applyOverviewZoom();
+                    updateOverviewToolbarState();
+                }
+                return false;
+            }
+            return;
+        case 189: // - (zoom out: more columns → smaller cards)
+        case 173: // - on Firefox
+            if (document.documentElement.classList.contains('overview')) {
+                if (overviewColumns < 10) {
+                    overviewColumns++;
+                    applyOverviewZoom();
+                    updateOverviewToolbarState();
+                }
+                return false;
+            }
+            return;
         case 48:  // 0
         case 49:  // 1
         case 50:  // 2
