@@ -222,8 +222,11 @@ var currentBuildStep = 0;
 // Overview zoom: number of card columns per row (2–10)
 var overviewColumns = 4;
 
-// Overview pinch-to-zoom: CSS zoom level applied to body in overview mode
-var overviewBodyZoom = 1.0;
+// Overview pinch-to-zoom state (transform on .md, not CSS zoom on body)
+// Using transform avoids flex reflow — layout stays fixed, content may go "out of bounds"
+var ovPinchScale = 1.0;
+var ovPinchTx    = 0;   // cumulative X translation (px) to keep cursor point fixed
+var ovPinchTy    = 0;
 
 // make options available globally
 var options;
@@ -2574,35 +2577,87 @@ function updateOverviewToolbarState() {
     if (btnIn)  { btnIn.disabled  = (overviewColumns <= 2);  }
 }
 
-// Handle trackpad pinch-to-zoom in overview mode.
-// Uses CSS `zoom` on body — the same mechanism as native browser zoom (Cmd+/−),
-// so the entire page scales uniformly without touching any font-size values.
-// Scroll position is adjusted so the point under the cursor stays fixed.
-function handleOverviewPinch(event) {
+// Apply the current pinch transform to .md.
+// transform: translate then scale around origin (0,0) of .md.
+function applyOverviewTransform() {
+    var mdEl = document.querySelector('.md');
+    if (!mdEl) return;
+    if (ovPinchScale === 1.0 && ovPinchTx === 0 && ovPinchTy === 0) {
+        mdEl.style.transform      = '';
+        mdEl.style.transformOrigin = '';
+    } else {
+        mdEl.style.transformOrigin = '0 0';
+        mdEl.style.transform =
+            'translate(' + ovPinchTx.toFixed(2) + 'px,' +
+                           ovPinchTy.toFixed(2) + 'px) ' +
+            'scale(' + ovPinchScale.toFixed(5) + ')';
+    }
+}
+
+function resetOverviewTransform() {
+    ovPinchScale = 1.0;
+    ovPinchTx    = 0;
+    ovPinchTy    = 0;
+    applyOverviewTransform();
+}
+
+// Handle all wheel events in overview mode.
+//
+// ctrlKey = true  → trackpad pinch-to-zoom
+// ctrlKey = false → trackpad two-finger drag to pan
+//
+// Both use CSS transform (translate + scale) on .md so the flex layout is
+// NEVER reflowed — column count stays fixed, out-of-bounds content is
+// accessible by panning.
+//
+// Zoom math (transform-origin: 0 0, apply translate then scale):
+//   .md local (px,py) → viewport:  (Tx + px·S − scrollX,  Ty + py·S − scrollY)
+//   To keep the cursor point fixed when scale changes by ratio R = S_new/S_old:
+//     Tx_new = (clientX + scrollX) · (1 − R) + Tx · R
+//     Ty_new = (clientY + scrollY) · (1 − R) + Ty · R
+//
+// Pan math:
+//   Moving .md by −Δ (opposite to scroll delta) mirrors normal page-scroll feel.
+function handleOverviewWheel(event) {
     if (!document.documentElement.classList.contains('overview')) return;
-    if (!event.ctrlKey) return;
 
-    event.preventDefault();
+    if (event.ctrlKey) {
+        // ── Pinch: zoom ───────────────────────────────────────────────────
+        event.preventDefault();
 
-    var delta = event.deltaY;
-    if (event.deltaMode === 1) delta *= 15;   // line mode → pixels
-    if (event.deltaMode === 2) delta *= 300;  // page mode → pixels
+        var delta = event.deltaY;
+        if (event.deltaMode === 1) delta *= 15;
+        if (event.deltaMode === 2) delta *= 300;
 
-    var oldZoom = overviewBodyZoom;
-    // Exponential sensitivity: pow(0.99, Δ) ≈ 1% per pixel of pinch
-    overviewBodyZoom = Math.max(0.2, Math.min(5.0,
-        overviewBodyZoom * Math.pow(0.99, delta)
-    ));
+        var newScale = Math.max(0.2, Math.min(5.0, ovPinchScale * Math.pow(0.99, delta)));
+        var R = newScale / ovPinchScale;
+        ovPinchScale = newScale;
 
-    document.body.style.zoom = overviewBodyZoom;
+        var cx = event.clientX + window.scrollX;
+        var cy = event.clientY + window.scrollY;
+        ovPinchTx = cx * (1 - R) + ovPinchTx * R;
+        ovPinchTy = cy * (1 - R) + ovPinchTy * R;
 
-    // Anchor zoom to cursor: keep the page-pixel under the cursor stationary.
-    // With CSS zoom, scrollX/Y are in viewport pixels; page pixels = scroll / zoom.
-    var ratio = overviewBodyZoom / oldZoom;
-    window.scrollTo(
-        (window.scrollX + event.clientX) * ratio - event.clientX,
-        (window.scrollY + event.clientY) * ratio - event.clientY
-    );
+        applyOverviewTransform();
+
+    } else {
+        // ── Two-finger drag: pan ──────────────────────────────────────────
+        // When no transform is active, let the browser handle normal page
+        // scroll so the 1× overview grid remains scrollable as usual.
+        if (ovPinchScale === 1.0 && ovPinchTx === 0 && ovPinchTy === 0) return;
+
+        event.preventDefault();
+
+        var dx = event.deltaX;
+        var dy = event.deltaY;
+        if (event.deltaMode === 1) { dx *= 15; dy *= 15; }
+        if (event.deltaMode === 2) { dx *= 300; dy *= 300; }
+
+        ovPinchTx -= dx;
+        ovPinchTy -= dy;
+
+        applyOverviewTransform();
+    }
 }
 
 // ── end Overview zoom helpers ────────────────────────────────────────────────
@@ -2612,15 +2667,13 @@ function toggleOverview() {
     var root = document.documentElement;
 
     if (root.classList.contains("overview")) {
-        // Exit overview mode — reset pinch zoom before leaving
-        document.body.style.zoom = '';
-        overviewBodyZoom = 1.0;
+        // Exit overview mode — clear pinch transform before leaving
+        resetOverviewTransform();
         root.classList.remove("overview");
         showSlide(currentSlideNum);
     } else {
-        // Enter overview mode — start from zoom = 1
-        overviewBodyZoom = 1.0;
-        document.body.style.zoom = '';
+        // Enter overview mode — always start with identity transform
+        resetOverviewTransform();
         root.classList.add("overview");
 
         // Apply card size for current column count
@@ -2635,6 +2688,7 @@ function toggleOverview() {
                 if (root.classList.contains("overview")) {
                     e.preventDefault();
                     e.stopPropagation();
+                    resetOverviewTransform(); // clear pinch zoom before leaving overview
                     root.classList.remove("overview");
                     gotoSlide(index);
                 }
@@ -2853,8 +2907,9 @@ function keyPress(event) {
 // Wait for DOM to be fully loaded before setting event listeners
 document.addEventListener('DOMContentLoaded', function () {
     document.body.onkeydown = keyPress;
-    // Pinch-to-zoom in overview: must be non-passive to call preventDefault
-    document.addEventListener('wheel', handleOverviewPinch, { passive: false });
+    // Overview wheel handler (pinch-to-zoom + two-finger pan):
+    // must be non-passive so we can call preventDefault when needed
+    document.addEventListener('wheel', handleOverviewWheel, { passive: false });
 });
 
 // set --vw and --vw css variables to viewport size, EXCLUDING the scroll bars
