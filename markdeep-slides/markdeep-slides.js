@@ -255,7 +255,7 @@ function processFencedBlocks(nodes) {
 
     // Dynamic regex pattern that matches 3 or more colons followed by a block type
     // Captures: (1) colons, (2) block type, (3) optional ratio
-    var startFenceRegex = /^(:{3,})(incremental|incremental-flat|appear\d*|big|small|tiny|two-column|two-column-appear)(?:\s+([0-9]+:[0-9]+))?\s*$/;
+    var startFenceRegex = /^(:{3,})(incremental|incremental-flat|appear\d*|big|small|tiny|columns)(?:\s+([0-9]+(?::[0-9]+)*))?\s*$/;
     // Dynamic regex for end fence - captures just the colons
     var endFenceRegex = /^(:{3,})\s*$/;
 
@@ -304,14 +304,12 @@ function processFencedBlocks(nodes) {
         if (startMatch) {
             var colonCount = startMatch[1].length;
             var blockType = startMatch[2];
-            var blockOptions = { ratio: { left: 1, right: 1 } };
+            var blockOptions = {};
 
-            if ((blockType === 'two-column' || blockType === 'two-column-appear') && startMatch[3]) {
-                var ratioParts = startMatch[3].split(':');
-                blockOptions.ratio = {
-                    left: parseInt(ratioParts[0], 10) || 1,
-                    right: parseInt(ratioParts[1], 10) || 1
-                };
+            if (blockType === 'columns' && startMatch[3]) {
+                blockOptions.flexValues = startMatch[3].split(':').map(function(v) {
+                    return parseInt(v, 10) || 1;
+                });
             }
 
             fenceStack.push({
@@ -340,12 +338,8 @@ function processFencedBlocks(nodes) {
                 var wrapper = document.createElement('div');
                 wrapper.className = currentFence.blockType;
 
-                if (currentFence.blockType === 'two-column' || currentFence.blockType === 'two-column-appear') {
-                    // For two-column blocks, we need to process nested fences first
-                    // Recursively process captured nodes to handle any nested fences
+                if (currentFence.blockType === 'columns') {
                     var processedInnerNodes = processFencedBlocks(currentFence.capturedNodes);
-
-                    // Convert processed nodes to HTML string for separator splitting
                     var content = '';
                     for (var j = 0; j < processedInnerNodes.length; j++) {
                         var childNode = processedInnerNodes[j];
@@ -356,55 +350,33 @@ function processFencedBlocks(nodes) {
                         }
                     }
 
-                    var leftRatio = currentFence.blockOptions.ratio.left;
-                    var rightRatio = currentFence.blockOptions.ratio.right;
-                    var leftContent = '';
-                    var rightContent = '';
+                    // Normalize both paragraph-wrapped and raw ;;;;;; separators
+                    var normalized = content.replace(/<p>\s*;;;;;;\s*<\/p>|;;;;;;\s*/g, '\x00SPLIT\x00');
+                    var parts = normalized.split('\x00SPLIT\x00')
+                        .map(function(p) { return p.trim(); })
+                        .filter(function(p) { return p.length > 0; });
 
-                    // Regex to find separator (inline or in <p>) and capture optional ratio
-                    var separatorRegex = /<p>\s*;;;\s*(?:([0-9]+:[0-9]+)\s*)?;;;\s*<\/p>|;;;(?:\s*([0-9]+:[0-9]+)\s*)?;;;\s*/;
-                    var separatorMatch = content.match(separatorRegex);
+                    var numParts = parts.length;
+                    var flexValues = currentFence.blockOptions.flexValues || [];
+                    var flex = function(i) { return flexValues[i] || 1; };
+                    wrapper.className = 'columns columns-' + numParts;
 
-                    if (separatorMatch) {
-                        var separatorHTML = separatorMatch[0];
-                        var ratioStr = separatorMatch[1] || separatorMatch[2] || '1:1';
-
-                        var ratioParts = ratioStr.split(':');
-                        leftRatio = parseInt(ratioParts[0], 10) || 1;
-                        rightRatio = parseInt(ratioParts[1], 10) || 1;
-
-                        var parts = content.split(separatorHTML);
-                        leftContent = parts[0].trim();
-                        rightContent = parts.length > 1 ? parts.slice(1).join(separatorHTML).trim() : '';
+                    if (numParts <= 3) {
+                        // Single row: 1, 2, or 3 columns
+                        wrapper.innerHTML = parts.map(function(p, i) {
+                            return '<div class="columns-cell" style="flex:' + flex(i) + ';">' + p + '</div>';
+                        }).join('');
                     } else {
-                        // Check for ;;;;;; separator
-                        var parts = content.split(';;;;;;');
-                        if (parts.length >= 2) {
-                            leftContent = parts[0].trim();
-                            rightContent = parts.slice(1).join(';;;;;;').trim();
-                        } else {
-                            leftContent = content.trim();
-                            rightContent = '';
+                        // 4 parts → two rows of 2 columns each
+                        var rows = [];
+                        for (var r = 0; r < numParts; r += 2) {
+                            var cells = '<div class="columns-cell" style="flex:' + flex(r) + ';">' + parts[r] + '</div>';
+                            if (r + 1 < numParts) {
+                                cells += '<div class="columns-cell" style="flex:' + flex(r + 1) + ';">' + parts[r + 1] + '</div>';
+                            }
+                            rows.push('<div class="columns-row">' + cells + '</div>');
                         }
-                    }
-
-                    var leftColumnClass = 'column-left';
-                    var rightColumnClass = 'column-right';
-
-                    if (currentFence.blockType === 'two-column-appear') {
-                        wrapper.innerHTML = `
-                            <div class="columns-container">
-                                <div class="${leftColumnClass} appear1" style="flex: ${leftRatio};">${leftContent}</div>
-                                <div class="${rightColumnClass} appear2" style="flex: ${rightRatio};">${rightContent}</div>
-                            </div>
-                        `;
-                    } else {
-                        wrapper.innerHTML = `
-                            <div class="columns-container">
-                                <div class="${leftColumnClass}" style="flex: ${leftRatio};">${leftContent}</div>
-                                <div class="${rightColumnClass}" style="flex: ${rightRatio};">${rightContent}</div>
-                            </div>
-                        `;
+                        wrapper.innerHTML = rows.join('');
                     }
                 } else {
                     // For other block types, recursively process captured nodes first
@@ -738,50 +710,6 @@ function initSlides() {
                 }
             }
 
-            // Check for two-column marker ;;;
-            if (sc.innerHTML.includes(';;;')) {
-                slide.classList.add('two-column');
-
-                // Find and separate the title (first H1-H6) from the content
-                const content = sc.innerHTML;
-                const titleRegex = /^\s*(<h[1-6][^>]*>.*?<\/h[1-6]>)/i;
-                const titleMatch = content.match(titleRegex);
-                const titleHTML = titleMatch ? titleMatch[1] : '';
-                const contentToSplit = titleMatch ? content.substring(titleMatch[0].length) : content;
-
-                // Regex to find separator (inline or in <p>) and capture optional ratio
-                const separatorRegex = /<p>\s*;;;\s*(?:([0-9]+:[0-9]+)\s*)?;;;\s*<\/p>|;;;(?:\s*([0-9]+:[0-9]+)\s*)?;;;\s*/;
-                const separatorMatch = contentToSplit.match(separatorRegex);
-
-                let leftContent = contentToSplit; // Default: all content in left column if separator logic fails
-                let rightContent = '';
-                let leftRatio = 1;
-                let rightRatio = 1;
-
-                if (separatorMatch) {
-                    const separatorHTML = separatorMatch[0];
-                    // The ratio can be in the first capture group (for <p>) or the second (for inline)
-                    const ratioStr = separatorMatch[1] || separatorMatch[2] || '1:1';
-
-                    const ratioParts = ratioStr.split(':');
-                    leftRatio = parseInt(ratioParts[0], 10) || 1;
-                    rightRatio = parseInt(ratioParts[1], 10) || 1;
-
-                    // Split content by the full separator
-                    const parts = contentToSplit.split(separatorHTML);
-                    leftContent = parts[0] || '';
-                    rightContent = parts.length > 1 ? parts[1] : '';
-                }
-
-                // Reconstruct the slide content with columns, applying ratios via inline style
-                sc.innerHTML = `
-                                                        ${titleHTML}
-                                                        <div class="columns-container">
-                                                            <div class="column-left" style="flex: ${leftRatio};">${leftContent}</div>
-                                                            <div class="column-right" style="flex: ${rightRatio};">${rightContent}</div>
-                                                        </div>
-                                                    `;
-            }
             slide.appendChild(sc);
             // 如果该幻灯片以 <h2> 开头，则在左下方显示所属的 H1 标题
             if (currentSlide.length > 0 && currentSlide[0].tagName === "H2" && currentH1Title) {
@@ -1845,6 +1773,50 @@ function toggleFullscreen() {
     }
 }
 
+// Exit fullscreen (if currently active) and invoke callback once the browser
+// has fully completed the transition.
+//
+// WHY THIS IS NEEDED (macOS / Edge / Chrome bug):
+//   When a native dialog is shown (showOpenFilePicker, requestPermission) while
+//   the browser is in HTML fullscreen mode, the browser forcefully exits fullscreen
+//   without going through a clean OS-level transition. On macOS this leaves a
+//   "ghost" fullscreen Space that cannot be dismissed — the user sees a blank
+//   desktop and must force-quit the browser.
+//   Calling exitFullscreen *before* opening any dialog lets macOS cleanly tear
+//   down the Space first.
+function exitFullscreenThen(callback) {
+    if (!isFullscreen()) {
+        callback();
+        return;
+    }
+
+    var settled = false;
+    function onSettled() {
+        if (settled) return;
+        settled = true;
+        document.removeEventListener('fullscreenchange',       onSettled);
+        document.removeEventListener('webkitfullscreenchange', onSettled);
+        document.removeEventListener('mozfullscreenchange',    onSettled);
+        document.removeEventListener('msfullscreenchange',     onSettled);
+        // Give macOS an extra moment to finish its Space animation before
+        // we display any native dialog.
+        setTimeout(callback, 300);
+    }
+
+    document.addEventListener('fullscreenchange',       onSettled);
+    document.addEventListener('webkitfullscreenchange', onSettled);
+    document.addEventListener('mozfullscreenchange',    onSettled);
+    document.addEventListener('msfullscreenchange',     onSettled);
+    // Safety fallback: if fullscreenchange never fires, proceed anyway
+    setTimeout(onSettled, 2000);
+
+    if (document.exitFullscreen)            document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    else if (document.mozCancelFullScreen)  document.mozCancelFullScreen();
+    else if (document.msExitFullscreen)     document.msExitFullscreen();
+    else callback(); // no fullscreen API available
+}
+
 // ============================================================
 // 字号持久化 —— 通过 File System Access API 将字号标签写回源文件
 // ============================================================
@@ -2092,7 +2064,7 @@ function addFontSizeButtonsToSlides(slides) {
         if (slide) {
             slide.classList.remove('tiny-text');
             slide.classList.add('small-text');
-            _persistFontSizeToSource(slide, 'small-text');
+            exitFullscreenThen(function () { _persistFontSizeToSource(slide, 'small-text'); });
         }
     };
 
@@ -2104,7 +2076,7 @@ function addFontSizeButtonsToSlides(slides) {
         if (slide) {
             slide.classList.remove('small-text');
             slide.classList.add('tiny-text');
-            _persistFontSizeToSource(slide, 'tiny-text');
+            exitFullscreenThen(function () { _persistFontSizeToSource(slide, 'tiny-text'); });
         }
     };
 
@@ -2116,7 +2088,7 @@ function addFontSizeButtonsToSlides(slides) {
         if (slide) {
             slide.classList.remove('small-text');
             slide.classList.remove('tiny-text');
-            _persistFontSizeToSource(slide, null);
+            exitFullscreenThen(function () { _persistFontSizeToSource(slide, null); });
         }
     };
 
@@ -2264,7 +2236,9 @@ function addEditButtonToSlides(slides) {
 function toggleEditMode(slideEl, btn) {
     // 已有覆盖层则忽略重复点击
     if (slideEl.querySelector('.slide-edit-overlay')) return;
-    enterEditMode(slideEl, btn);
+    // Exit fullscreen first to avoid the macOS "ghost Space" bug that occurs
+    // when showOpenFilePicker / requestPermission is called while fullscreen.
+    exitFullscreenThen(function () { enterEditMode(slideEl, btn); });
 }
 
 function addFullSourceButtonToSlides(slides) {
@@ -2277,7 +2251,8 @@ function addFullSourceButtonToSlides(slides) {
         btn.className = 'full-source-btn';
         btn.onclick = function (e) {
             e.stopPropagation();
-            showFullSourceOverlay();
+            // Exit fullscreen first to avoid the macOS "ghost Space" bug
+            exitFullscreenThen(function () { showFullSourceOverlay(); });
         };
         btnContainer.appendChild(btn);
     }
