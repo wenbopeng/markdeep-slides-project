@@ -59,13 +59,16 @@ if (!window._markdeepRawSource && document.body) {
 
 (function preprocessChartFences() {
     var CHART_TYPES = ['mermaid', 'echarts', 'chartjs', 'chart\\.js', 'd3-force', 'd3-network', 'svg'];
-    var pattern = new RegExp('```(' + CHART_TYPES.join('|') + ')\\b', 'gi');
+    var pattern = new RegExp('```(' + CHART_TYPES.join('|') + ')\\b([^\\n]*)', 'gi');
 
     function walk(node) {
         if (node.nodeType === 3) {
             var text = node.textContent;
-            var replaced = text.replace(pattern, function (_, type) {
-                return '```\nchart: ' + type.toLowerCase();
+            var replaced = text.replace(pattern, function (_, type, rest) {
+                var result = '```\nchart: ' + type.toLowerCase();
+                var heightMatch = rest.trim().match(/height\s*:\s*(.+)/i);
+                if (heightMatch) result += '\nheight: ' + heightMatch[1].trim();
+                return result;
             });
             if (replaced !== text) node.textContent = replaced;
         } else {
