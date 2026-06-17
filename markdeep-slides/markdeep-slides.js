@@ -512,10 +512,10 @@ function initSlides() {
     for (var i = 0; i < es.length; i++) {
         var e = es[i];
 
-        // Parse for a new section marker
-        var sectionMatch = e.textContent.trim().match(/^%%(.*)%%$/);
+        // Parse for a new section marker: %%章节名%% or ==章节名==
+        var sectionMatch = e.textContent.trim().match(/^(?:%%(.*)%%|==(.+)==)$/);
         if (sectionMatch) {
-            nextSectionName = sectionMatch[1];
+            nextSectionName = sectionMatch[1] !== undefined ? sectionMatch[1] : sectionMatch[2];
             continue;
         }
 
