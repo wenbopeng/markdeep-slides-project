@@ -312,6 +312,14 @@ html.presenter-notes {
     [class^="appear"] {
         opacity: 1 !important;
     }
+
+    /* ECharts creates an inner div with inline pixel width/height.
+       If JS resize() hasn't run yet, clamp it so it never overflows the slide. */
+    .markdeep-echarts > div {
+        max-width: 100% !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+    }
 }
 
 /* For slides with smaller text */

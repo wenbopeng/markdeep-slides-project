@@ -1577,6 +1577,66 @@ window.addEventListener('resize', function () {
     resizeVisualizations();
 });
 
+// --- Print support for ECharts ---
+// resize() schedules an async redraw via requestAnimationFrame, so Chrome can
+// capture the print layout before the canvas is redrawn at the new size.
+// Fix: after resize(), call getDataURL() which forces a synchronous redraw,
+// then replace the live canvas with a static <img> so Chrome captures the
+// correctly-sized chart. Restore after printing.
+var _printMQ = window.matchMedia('print');
+var _printChartImages = [];
+
+function _onEnterPrintMode() {
+    if (_printChartImages.length > 0) return; // avoid double-processing
+    _markdeepSlidesCharts.forEach(function (chart) {
+        if (chart.type !== 'echarts' || !chart.instance) return;
+        var el = chart.el;
+        var inner = el.querySelector('div'); // ECharts root container
+        if (!inner) return;
+
+        // Re-read container at print CSS dimensions (640px slide width)
+        chart.instance.resize();
+
+        // getDataURL() forces a synchronous ZRender flush, capturing the
+        // redrawn chart at the new print dimensions
+        var url;
+        try {
+            url = chart.instance.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: 'transparent' });
+        } catch (e) { return; }
+
+        // Hide the live ECharts DOM so it can't overflow the slide
+        inner.style.display = 'none';
+
+        // Insert a static image; width/height 100% fills the same container
+        var img = document.createElement('img');
+        img.className = 'markdeep-echarts-print';
+        img.src = url;
+        img.style.cssText = 'width:100%;height:100%;display:block;object-fit:contain;object-position:top left;';
+        el.appendChild(img);
+
+        _printChartImages.push({ inner: inner, img: img });
+    });
+}
+
+function _onExitPrintMode() {
+    _printChartImages.forEach(function (item) {
+        if (item.img.parentNode) item.img.parentNode.removeChild(item.img);
+        item.inner.style.display = '';
+    });
+    _printChartImages = [];
+    resizeVisualizations(); // restore to screen dimensions
+}
+
+if (_printMQ.addEventListener) {
+    _printMQ.addEventListener('change', function (mq) {
+        if (mq.matches) { _onEnterPrintMode(); } else { _onExitPrintMode(); }
+    });
+} else {
+    _printMQ.addListener(function (mq) { // Safari < 14
+        if (mq.matches) { _onEnterPrintMode(); } else { _onExitPrintMode(); }
+    });
+}
+
 // make diagrams resize properly: markdeep diagrams have their width and
 // height attributes set to absoulute pixel values, which don't scale. so we
 // need to move this width and height information into a new viewbox
