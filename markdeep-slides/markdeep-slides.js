@@ -101,6 +101,52 @@ if (!window._markdeepRawSource && document.body) {
     if (document.body) walk(document.body);
 }());
 
+// Markdeep requires a blank `>` line at the very start of each blockquote block;
+// without it a single-line blockquote is not rendered at all.
+// Insert `>` before any `>` content line whose preceding line is not itself a `>` line.
+(function preprocessBlockquoteBlankLines() {
+    function processText(text) {
+        var lines = text.split('\n');
+        var result = [];
+        var fenceDepth = 0;
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+
+            // Track code/fence blocks so we leave their content untouched.
+            if (/^[ \t]*(```|~~~|:{3,})/.test(line)) {
+                fenceDepth = fenceDepth > 0 ? 0 : 1;
+            }
+
+            if (fenceDepth === 0 && /^[ \t]*>/.test(line)) {
+                var prevLine = result.length > 0 ? result[result.length - 1] : '';
+                if (!/^[ \t]*>/.test(prevLine)) {
+                    // Insert a blank `>` to open the blockquote block.
+                    result.push('>');
+                }
+            }
+
+            result.push(line);
+        }
+
+        return result.join('\n');
+    }
+
+    function walk(node) {
+        if (node.nodeType === 3) {
+            var text = node.textContent;
+            var replaced = processText(text);
+            if (replaced !== text) node.textContent = replaced;
+        } else if (node.nodeType === 1) {
+            var tag = (node.tagName || '').toUpperCase();
+            if (tag === 'SCRIPT' || tag === 'STYLE') return;
+            for (var i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i]);
+        }
+    }
+
+    if (document.body) walk(document.body);
+}());
+
 // Ensure a blank line exists between a fence opening marker and its first content line.
 // Without it Markdeep treats the content (e.g. a list) as a continuation paragraph.
 // Pattern: :::blocktype immediately followed (no blank line) by a non-empty line.
@@ -1144,11 +1190,70 @@ function processMarkdeepSlidesOptions() {
     }
 }
 
+// Scale any MathJax SVG formula that overflows its slide.
+// Strategy: modify the SVG's `width`/`height` attributes (which are in `ex` units)
+// rather than changing CSS font-size.  Changing font-size causes CJK <text> elements
+// inside the SVG to inherit the smaller size while their MathJax-computed positions
+// stay fixed — producing abnormally large letter spacing.  Changing the SVG's own
+// size attributes keeps viewBox and internal coordinates intact, so the browser
+// scales everything (paths AND text) uniformly via the SVG viewport.
+function scaleMathJaxToFit() {
+    document.querySelectorAll('.slide-content .MathJax_SVG svg').forEach(function (svg) {
+        var mathSpan = svg.closest('.MathJax_SVG');
+        if (!mathSpan) return;
+
+        // On first call: cache the natural dimensions so we can restore them later.
+        var origW = svg.getAttribute('data-orig-width');
+        var origH = svg.getAttribute('data-orig-height');
+        if (origW === null) {
+            origW = svg.getAttribute('width') || '';
+            origH = svg.getAttribute('height') || '';
+            svg.setAttribute('data-orig-width', origW);
+            svg.setAttribute('data-orig-height', origH);
+        } else {
+            // Restore natural size before measuring so the ratio is always
+            // computed from the formula's unscaled width at the current zoom.
+            svg.setAttribute('width', origW);
+            svg.setAttribute('height', origH);
+        }
+
+        var container = mathSpan.closest('.slide-content');
+        if (!container) return;
+        // Use the content-area width (excluding padding) so the formula is
+        // compared against the space actually available for text, not the full
+        // border-box width that getBoundingClientRect returns.
+        var cs = window.getComputedStyle(container);
+        var containerWidth = container.getBoundingClientRect().width
+            - parseFloat(cs.paddingLeft  || 0)
+            - parseFloat(cs.paddingRight || 0);
+        if (!containerWidth) return;
+
+        var mathWidth = mathSpan.getBoundingClientRect().width;
+        if (mathWidth <= containerWidth) return;
+
+        var ratio = containerWidth / mathWidth;
+        var wNum = parseFloat(origW);
+        var hNum = parseFloat(origH);
+        if (!isNaN(wNum) && !isNaN(hNum)) {
+            svg.setAttribute('width',  (wNum * ratio).toFixed(3) + 'ex');
+            svg.setAttribute('height', (hNum * ratio).toFixed(3) + 'ex');
+        }
+    });
+}
+
 // initialize mathjax
 function initMathJax() {
     var script = document.createElement("script");
     script.type = "text/javascript";
     script.src = "markdeep-slides/lib/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_SVG"; //这里使用相对路径2511151223
+    script.onload = function () {
+        // Register once: after every MathJax typeset pass, scale overflowing formulas.
+        // requestAnimationFrame defers until the SVG is painted so getBoundingClientRect
+        // returns real layout values rather than zero.
+        MathJax.Hub.Register.MessageHook("End Process", function () {
+            requestAnimationFrame(scaleMathJaxToFit);
+        });
+    };
     document.getElementsByTagName("head")[0].appendChild(script);
 }
 
