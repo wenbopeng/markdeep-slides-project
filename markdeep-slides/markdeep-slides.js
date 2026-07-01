@@ -1243,6 +1243,11 @@ function scaleMathJaxToFit() {
 
 // initialize mathjax
 function initMathJax() {
+    // Enable \textcolor and \color commands via the color extension
+    window.MathJax = window.MathJax || {};
+    window.MathJax.TeX = window.MathJax.TeX || {};
+    window.MathJax.TeX.extensions = (window.MathJax.TeX.extensions || []).concat(["color.js"]);
+
     var script = document.createElement("script");
     script.type = "text/javascript";
     script.src = "markdeep-slides/lib/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_SVG"; //这里使用相对路径2511151223
